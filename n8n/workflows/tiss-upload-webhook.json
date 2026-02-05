@@ -1,0 +1,251 @@
+{
+  "name": "FinHealth - TISS Upload Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tiss-upload",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook-tiss",
+      "name": "Webhook TISS Upload",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "tiss-upload"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-xml",
+              "leftValue": "={{ $json.body.xml }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse TISS XML and extract procedures\nconst xml = $input.item.json.body.xml;\nconst accountId = $input.item.json.body.accountId;\n\n// Basic XML parsing - extract procedure codes\nconst procedureCodes = [];\nconst codeRegex = /<codigoProcedimento>([0-9]+)<\\/codigoProcedimento>/g;\nlet match;\nwhile ((match = codeRegex.exec(xml)) !== null) {\n  procedureCodes.push(match[1]);\n}\n\n// Extract guide number\nconst guideMatch = xml.match(/<numeroGuiaPrestador>([^<]+)<\\/numeroGuiaPrestador>/);\nconst guideNumber = guideMatch ? guideMatch[1] : null;\n\n// Extract total value\nconst totalMatch = xml.match(/<valorTotalGeral>([0-9.]+)<\\/valorTotalGeral>/);\nconst totalValue = totalMatch ? parseFloat(totalMatch[1]) : 0;\n\nreturn {\n  accountId,\n  guideNumber,\n  procedureCodes,\n  totalValue,\n  xml,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "parse-xml",
+      "name": "Parse TISS XML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [690, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://zzxdvmuxzzopqvxotdeb.supabase.co/rest/v1/tuss_procedures",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "code",
+              "value": "=in.({{ $json.procedureCodes.join(',') }})"
+            },
+            {
+              "name": "select",
+              "value": "code,description,unit_price"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "validate-tuss",
+      "name": "Validate TUSS Codes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [910, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputCodes = $('Parse TISS XML').item.json.procedureCodes;\nconst validCodes = $input.item.json.map(p => p.code);\n\nconst invalidCodes = inputCodes.filter(code => !validCodes.includes(code));\nconst validProcedures = $input.item.json;\n\nconst isValid = invalidCodes.length === 0;\nconst errors = invalidCodes.map(code => `Codigo TUSS invalido: ${code}`);\n\nreturn {\n  isValid,\n  errors,\n  validProcedures,\n  invalidCodes,\n  accountId: $('Parse TISS XML').item.json.accountId,\n  guideNumber: $('Parse TISS XML').item.json.guideNumber,\n  totalValue: $('Parse TISS XML').item.json.totalValue\n};"
+      },
+      "id": "check-validation",
+      "name": "Check Validation Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1130, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://zzxdvmuxzzopqvxotdeb.supabase.co/rest/v1/medical_accounts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"tiss_validation_status\": \"{{ $json.isValid ? 'valid' : 'invalid' }}\",\n  \"tiss_validation_errors\": {{ JSON.stringify($json.errors) }}\n}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.accountId }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "update-account",
+      "name": "Update Account Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1350, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, isValid: $json.isValid, errors: $json.errors, guideNumber: $json.guideNumber } }}"
+      },
+      "id": "respond-success",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1570, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, error: 'Missing required field: xml' } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "respond-error",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [690, 400]
+    }
+  ],
+  "connections": {
+    "Webhook TISS Upload": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Parse TISS XML",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse TISS XML": {
+      "main": [
+        [
+          {
+            "node": "Validate TUSS Codes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate TUSS Codes": {
+      "main": [
+        [
+          {
+            "node": "Check Validation Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Validation Result": {
+      "main": [
+        [
+          {
+            "node": "Update Account Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Account Status": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "FinHealth",
+      "createdAt": "2026-02-05T00:00:00.000Z",
+      "updatedAt": "2026-02-05T00:00:00.000Z"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2026-02-05T00:00:00.000Z",
+  "versionId": "1"
+}

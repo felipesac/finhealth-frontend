@@ -1,0 +1,218 @@
+{
+  "name": "FinHealth - Glosa Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "glosa-notification",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-notification",
+      "name": "Webhook Glosa Notification",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "glosa-notification"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "high-risk-condition",
+              "leftValue": "={{ $json.glosaRiskScore }}",
+              "rightValue": 70,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-severity",
+      "name": "Check Severity Level",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\n\nconst severity = data.glosaRiskScore >= 90 ? 'CRITICO' : \n                 data.glosaRiskScore >= 80 ? 'ALTO' : 'MEDIO';\n\nconst highRiskItems = (data.highRiskProcedures || []).slice(0, 5);\n\nreturn {\n  accountId: data.accountId,\n  accountNumber: data.accountNumber,\n  patientName: data.patientName || 'N/A',\n  insurerName: data.insurerName || 'N/A',\n  totalAmount: data.totalAmount,\n  glosaRiskScore: data.glosaRiskScore,\n  potentialGlosaAmount: data.potentialGlosaAmount || 0,\n  severity,\n  highRiskItems,\n  recommendations: data.recommendations || [],\n  analysis: data.analysis || '',\n  notifiedAt: new Date().toISOString()\n};"
+      },
+      "id": "prepare-notification",
+      "name": "Prepare Notification Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [690, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://zzxdvmuxzzopqvxotdeb.supabase.co/rest/v1/glosa_notifications",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"medical_account_id\": \"{{ $json.accountId }}\",\n  \"severity\": \"{{ $json.severity }}\",\n  \"risk_score\": {{ $json.glosaRiskScore }},\n  \"potential_amount\": {{ $json.potentialGlosaAmount }},\n  \"notification_data\": {{ JSON.stringify({ highRiskItems: $json.highRiskItems, recommendations: $json.recommendations, analysis: $json.analysis }) }},\n  \"status\": \"pending\"\n}",
+        "options": {}
+      },
+      "id": "save-notification",
+      "name": "Save Notification to DB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [910, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "finhealth@noxtec.com.br",
+        "toEmail": "alerts@noxtec.com.br",
+        "subject": "=[{{ $('Prepare Notification Data').item.json.severity }}] Alerta de Glosa - Conta {{ $('Prepare Notification Data').item.json.accountNumber }}",
+        "emailType": "html",
+        "html": "=<h2>Alerta de Risco de Glosa</h2>\n<p><strong>Severidade:</strong> {{ $('Prepare Notification Data').item.json.severity }}</p>\n<p><strong>Conta:</strong> {{ $('Prepare Notification Data').item.json.accountNumber }}</p>\n<p><strong>Paciente:</strong> {{ $('Prepare Notification Data').item.json.patientName }}</p>\n<p><strong>Operadora:</strong> {{ $('Prepare Notification Data').item.json.insurerName }}</p>\n<p><strong>Valor Total:</strong> R$ {{ $('Prepare Notification Data').item.json.totalAmount }}</p>\n<p><strong>Score de Risco:</strong> {{ $('Prepare Notification Data').item.json.glosaRiskScore }}%</p>\n<p><strong>Valor Potencial de Glosa:</strong> R$ {{ $('Prepare Notification Data').item.json.potentialGlosaAmount }}</p>\n\n<h3>Análise</h3>\n<p>{{ $('Prepare Notification Data').item.json.analysis }}</p>\n\n<h3>Procedimentos de Alto Risco</h3>\n<ul>\n{{ $('Prepare Notification Data').item.json.highRiskItems.map(item => '<li>' + item.code + ' - ' + item.reason + ' (Risco: ' + item.risk + '%)</li>').join('') }}\n</ul>\n\n<h3>Recomendações</h3>\n<ul>\n{{ $('Prepare Notification Data').item.json.recommendations.map(rec => '<li>' + rec + '</li>').join('') }}\n</ul>\n\n<p><a href=\"https://finhealth.noxtec.com.br/contas/{{ $('Prepare Notification Data').item.json.accountId }}\">Ver Conta no Sistema</a></p>",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1130, 200],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://zzxdvmuxzzopqvxotdeb.supabase.co/rest/v1/glosa_notifications",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"sent\",\n  \"sent_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "medical_account_id",
+              "value": "=eq.{{ $('Prepare Notification Data').item.json.accountId }}"
+            },
+            {
+              "name": "status",
+              "value": "eq.pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-status",
+      "name": "Update Notification Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1350, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "no-notification",
+      "name": "Skip Notification",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [690, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Glosa Notification": {
+      "main": [
+        [
+          {
+            "node": "Check Severity Level",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Severity Level": {
+      "main": [
+        [
+          {
+            "node": "Prepare Notification Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Notification Data": {
+      "main": [
+        [
+          {
+            "node": "Save Notification to DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Notification to DB": {
+      "main": [
+        [
+          {
+            "node": "Send Email Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Alert": {
+      "main": [
+        [
+          {
+            "node": "Update Notification Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "FinHealth"
+    }
+  ]
+}

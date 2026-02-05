@@ -1,0 +1,353 @@
+{
+  "name": "FinHealth - Auditor Glosa Detector",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://zzxdvmuxzzopqvxotdeb.supabase.co/rest/v1/medical_accounts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "eq.validated"
+            },
+            {
+              "name": "glosa_risk_score",
+              "value": "is.null"
+            },
+            {
+              "name": "select",
+              "value": "id,account_number,total_amount,patient:patients(name),health_insurer:health_insurers(name)"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-pending",
+      "name": "Fetch Pending Accounts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [470, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://zzxdvmuxzzopqvxotdeb.supabase.co/rest/v1/procedures",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "medical_account_id",
+              "value": "=eq.{{ $json.id }}"
+            },
+            {
+              "name": "select",
+              "value": "*"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-procedures",
+      "name": "Fetch Account Procedures",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [910, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "values": [
+            {
+              "content": "Voce é um auditor especialista em faturamento hospitalar brasileiro (auditor-agent). Analise a conta médica e identifique possíveis riscos de glosa.\n\nRegras de análise:\n1. Verificar se os códigos TUSS são compatíveis entre si\n2. Identificar procedimentos que frequentemente são glosados juntos\n3. Verificar valores acima da média do mercado\n4. Identificar procedimentos sem justificativa clínica clara\n5. Verificar duplicidades\n\nResponda em JSON:\n{\n  \"glosaRiskScore\": number (0-100),\n  \"highRiskProcedures\": [{\"code\": string, \"reason\": string, \"risk\": number}],\n  \"recommendations\": string[],\n  \"potentialGlosaAmount\": number,\n  \"analysis\": string\n}"
+            },
+            {
+              "content": "=Conta: {{ $('Split In Batches').item.json.account_number }}\nPaciente: {{ $('Split In Batches').item.json.patient?.name || 'N/A' }}\nOperadora: {{ $('Split In Batches').item.json.health_insurer?.name || 'N/A' }}\nValor Total: R$ {{ $('Split In Batches').item.json.total_amount }}\n\nProcedimentos:\n{{ JSON.stringify($json, null, 2) }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "openai-audit",
+      "name": "OpenAI Audit Analysis",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [1130, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-key",
+          "name": "OpenAI API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResponse = $input.item.json.message.content;\nconst account = $('Split In Batches').item.json;\nlet audit;\n\ntry {\n  const jsonMatch = aiResponse.match(/\\{[\\s\\S]*\\}/);\n  audit = jsonMatch ? JSON.parse(jsonMatch[0]) : {};\n} catch (e) {\n  audit = { glosaRiskScore: 50, analysis: aiResponse };\n}\n\nreturn {\n  accountId: account.id,\n  accountNumber: account.account_number,\n  patientName: account.patient?.name,\n  insurerName: account.health_insurer?.name,\n  totalAmount: account.total_amount,\n  ...audit,\n  requiresNotification: audit.glosaRiskScore >= 70\n};"
+      },
+      "id": "process-audit",
+      "name": "Process Audit Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1350, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://zzxdvmuxzzopqvxotdeb.supabase.co/rest/v1/medical_accounts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"glosa_risk_score\": {{ $json.glosaRiskScore }},\n  \"audit_score\": {{ 100 - $json.glosaRiskScore }},\n  \"audit_issues\": {{ JSON.stringify({ highRiskProcedures: $json.highRiskProcedures, recommendations: $json.recommendations, potentialGlosaAmount: $json.potentialGlosaAmount, analysis: $json.analysis }) }}\n}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.accountId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-account-audit",
+      "name": "Update Account Audit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1570, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "high-risk-condition",
+              "leftValue": "={{ $json.requiresNotification }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-notification",
+      "name": "Check If Notification Needed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1790, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://n8n.noxtec.com.br/webhook/glosa-notification",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Process Audit Result').item.json }}"
+      },
+      "id": "send-notification",
+      "name": "Send Notification Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2010, 200]
+    },
+    {
+      "parameters": {},
+      "id": "continue-loop",
+      "name": "Continue to Next",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2010, 400]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Pending Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Pending Accounts": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Fetch Account Procedures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Account Procedures": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Audit Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Audit Analysis": {
+      "main": [
+        [
+          {
+            "node": "Process Audit Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Audit Result": {
+      "main": [
+        [
+          {
+            "node": "Update Account Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Account Audit": {
+      "main": [
+        [
+          {
+            "node": "Check If Notification Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Notification Needed": {
+      "main": [
+        [
+          {
+            "node": "Send Notification Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Continue to Next",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Notification Webhook": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continue to Next": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "FinHealth"
+    }
+  ]
+}

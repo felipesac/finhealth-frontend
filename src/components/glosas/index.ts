@@ -1,0 +1,1 @@
+export { GlosasTable } from './GlosasTable';

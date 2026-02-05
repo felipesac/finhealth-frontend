@@ -1,0 +1,241 @@
+{
+  "name": "FinHealth - Billing Agent Processor",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "billing-agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-billing",
+      "name": "Webhook Billing Agent",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "billing-agent"
+    },
+    {
+      "parameters": {
+        "url": "https://zzxdvmuxzzopqvxotdeb.supabase.co/rest/v1/medical_accounts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.body.accountId }}"
+            },
+            {
+              "name": "select",
+              "value": "*,patient:patients(*),health_insurer:health_insurers(*)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-account",
+      "name": "Fetch Account Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [470, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://zzxdvmuxzzopqvxotdeb.supabase.co/rest/v1/procedures",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "medical_account_id",
+              "value": "=eq.{{ $('Webhook Billing Agent').item.json.body.accountId }}"
+            },
+            {
+              "name": "select",
+              "value": "*"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-procedures",
+      "name": "Fetch Procedures",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [690, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "values": [
+            {
+              "content": "Voce é um agente especialista em faturamento hospitalar brasileiro (billing-agent). Analise a conta médica e procedimentos fornecidos e:\n1. Valide os códigos TUSS\n2. Identifique possíveis inconsistências\n3. Calcule o risco de glosa (0-100)\n4. Gere recomendações para otimizar o faturamento\n\nResponda em JSON com a estrutura:\n{\n  \"isValid\": boolean,\n  \"errors\": string[],\n  \"warnings\": string[],\n  \"glosaRiskScore\": number,\n  \"recommendations\": string[],\n  \"analysis\": string\n}"
+            },
+            {
+              "content": "=Conta Médica:\n{{ JSON.stringify($('Fetch Account Data').item.json[0], null, 2) }}\n\nProcedimentos:\n{{ JSON.stringify($json, null, 2) }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "openai-analysis",
+      "name": "OpenAI Billing Analysis",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [910, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-key",
+          "name": "OpenAI API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResponse = $input.item.json.message.content;\nlet analysis;\n\ntry {\n  // Try to parse JSON from AI response\n  const jsonMatch = aiResponse.match(/\\{[\\s\\S]*\\}/);\n  analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : { analysis: aiResponse };\n} catch (e) {\n  analysis = { analysis: aiResponse, isValid: true, errors: [], warnings: [], glosaRiskScore: 50, recommendations: [] };\n}\n\nreturn {\n  accountId: $('Webhook Billing Agent').item.json.body.accountId,\n  ...analysis,\n  processedAt: new Date().toISOString()\n};"
+      },
+      "id": "parse-ai-response",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1130, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://zzxdvmuxzzopqvxotdeb.supabase.co/rest/v1/medical_accounts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"audit_score\": {{ 100 - $json.glosaRiskScore }},\n  \"glosa_risk_score\": {{ $json.glosaRiskScore }},\n  \"audit_issues\": {{ JSON.stringify({ errors: $json.errors, warnings: $json.warnings, recommendations: $json.recommendations }) }}\n}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $json.accountId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-audit",
+      "name": "Update Audit Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1350, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $('Parse AI Response').item.json }}"
+      },
+      "id": "respond-result",
+      "name": "Respond Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1570, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Billing Agent": {
+      "main": [
+        [
+          {
+            "node": "Fetch Account Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Account Data": {
+      "main": [
+        [
+          {
+            "node": "Fetch Procedures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Procedures": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Billing Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Billing Analysis": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Update Audit Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Audit Results": {
+      "main": [
+        [
+          {
+            "node": "Respond Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "FinHealth"
+    }
+  ]
+}
