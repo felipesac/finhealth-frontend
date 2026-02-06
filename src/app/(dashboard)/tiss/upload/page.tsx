@@ -1,9 +1,32 @@
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
 import { TissUploadForm } from '@/components/tiss';
 import { ArrowLeft } from 'lucide-react';
 
-export default function TissUploadPage() {
+async function getAccounts() {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from('medical_accounts')
+    .select('id, account_number, patient:patients(name)')
+    .in('status', ['pending', 'validated'])
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  return (data || []).map((row) => {
+    const patient = Array.isArray(row.patient) ? row.patient[0] : row.patient;
+    return {
+      id: row.id as string,
+      account_number: row.account_number as string,
+      patient_name: (patient as { name: string } | null)?.name,
+    };
+  });
+}
+
+export default async function TissUploadPage() {
+  const accounts = await getAccounts();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -21,7 +44,7 @@ export default function TissUploadPage() {
       </div>
 
       <div className="max-w-2xl">
-        <TissUploadForm />
+        <TissUploadForm accounts={accounts} />
       </div>
     </div>
   );
