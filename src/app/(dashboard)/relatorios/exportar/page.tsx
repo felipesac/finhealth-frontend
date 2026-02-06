@@ -57,6 +57,7 @@ export default function ExportarPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           types: selectedTypes,
+          format,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
         }),

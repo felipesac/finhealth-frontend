@@ -10,7 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { ExportButton } from '@/components/reports/ExportButton';
 import { formatCurrency } from '@/lib/formatters';
 
 async function getBillingData() {
@@ -72,10 +73,7 @@ export default async function FaturamentoPage() {
             Relatorio de faturamento por operadora
           </p>
         </div>
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Exportar
-        </Button>
+        <ExportButton dataType="accounts" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

@@ -1,10 +1,73 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { createClient } from '@/lib/supabase/client';
 
 export default function ConfiguracoesPage() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setEmail(data.user.email || '');
+        setName(data.user.user_metadata?.name || '');
+      }
+    });
+  }, []);
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({
+        data: { name },
+      });
+      if (error) throw error;
+      toast({ title: 'Perfil atualizado com sucesso' });
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      toast({ title: 'Erro ao salvar perfil', description: error.message, variant: 'destructive' });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast({ title: 'A nova senha deve ter pelo menos 6 caracteres', variant: 'destructive' });
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (error) throw error;
+      setCurrentPassword('');
+      setNewPassword('');
+      toast({ title: 'Senha alterada com sucesso' });
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      toast({ title: 'Erro ao alterar senha', description: error.message, variant: 'destructive' });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -26,14 +89,17 @@ export default function ConfiguracoesPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
-                <Input id="name" placeholder="Seu nome" />
+                <Input id="name" placeholder="Seu nome" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="seu@email.com" />
+                <Input id="email" type="email" value={email} disabled />
               </div>
             </div>
-            <Button>Salvar Alteracoes</Button>
+            <Button onClick={handleSaveProfile} disabled={savingProfile}>
+              {savingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar Alteracoes
+            </Button>
           </CardContent>
         </Card>
 
@@ -48,14 +114,17 @@ export default function ConfiguracoesPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="current-password">Senha Atual</Label>
-                <Input id="current-password" type="password" />
+                <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="new-password">Nova Senha</Label>
-                <Input id="new-password" type="password" />
+                <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
               </div>
             </div>
-            <Button>Alterar Senha</Button>
+            <Button onClick={handleChangePassword} disabled={changingPassword}>
+              {changingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Alterar Senha
+            </Button>
           </CardContent>
         </Card>
 
@@ -77,7 +146,11 @@ export default function ConfiguracoesPage() {
               <p className="text-sm text-muted-foreground">
                 Nenhum certificado configurado
               </p>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toast({ title: 'Funcionalidade em desenvolvimento', description: 'Upload de certificado digital sera disponibilizado em breve.' })}
+              >
                 Configurar Certificado
               </Button>
             </div>

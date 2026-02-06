@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import {
   Table,
@@ -10,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { StatusBadge } from './StatusBadge';
+import { useFiltersStore } from '@/stores/filters-store';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import type { MedicalAccount } from '@/types';
 
@@ -25,6 +27,18 @@ const typeLabels: Record<string, string> = {
 };
 
 export function AccountsTable({ accounts }: AccountsTableProps) {
+  const { accounts: filters } = useFiltersStore();
+
+  const filtered = useMemo(() => {
+    return accounts.filter((a) => {
+      if (filters.status !== 'all' && a.status !== filters.status) return false;
+      if (filters.type !== 'all' && a.account_type !== filters.type) return false;
+      if (filters.insurerId !== 'all' && a.health_insurer_id !== filters.insurerId) return false;
+      if (filters.search && !a.account_number.toLowerCase().includes(filters.search.toLowerCase())) return false;
+      return true;
+    });
+  }, [accounts, filters]);
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -41,7 +55,7 @@ export function AccountsTable({ accounts }: AccountsTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {accounts.map((account) => (
+          {filtered.map((account) => (
             <TableRow key={account.id}>
               <TableCell>
                 <Link
@@ -66,7 +80,7 @@ export function AccountsTable({ accounts }: AccountsTableProps) {
               <TableCell>{formatDate(account.created_at)}</TableCell>
             </TableRow>
           ))}
-          {accounts.length === 0 && (
+          {filtered.length === 0 && (
             <TableRow>
               <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                 Nenhuma conta encontrada

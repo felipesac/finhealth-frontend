@@ -10,7 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { ExportButton } from '@/components/reports/ExportButton';
 import { formatCurrency } from '@/lib/formatters';
 
 async function getGlosasData() {
@@ -104,10 +105,7 @@ export default async function GlosasOperadoraPage() {
             Analise de glosas agrupadas por operadora
           </p>
         </div>
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Exportar
-        </Button>
+        <ExportButton dataType="glosas" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
