@@ -25,7 +25,11 @@ const navItems = [
   { href: '/configuracoes', label: 'Configuracoes', icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export function Sidebar({ onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
 
@@ -44,6 +48,7 @@ export function Sidebar() {
         <button
           onClick={toggleSidebar}
           className="rounded-md p-2 hover:bg-muted"
+          aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
         >
           <ChevronLeft
             className={cn(
@@ -55,7 +60,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="space-y-1 p-2">
+      <nav className="space-y-1 p-2" aria-label="Navegacao principal">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -64,6 +69,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={cn(
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 isActive
@@ -72,8 +78,9 @@ export function Sidebar() {
                 sidebarCollapsed && 'justify-center'
               )}
               title={sidebarCollapsed ? item.label : undefined}
+              aria-current={isActive ? 'page' : undefined}
             >
-              <Icon className="h-5 w-5 flex-shrink-0" />
+              <Icon className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
               {!sidebarCollapsed && <span>{item.label}</span>}
             </Link>
           );
@@ -82,3 +89,5 @@ export function Sidebar() {
     </aside>
   );
 }
+
+export { navItems };

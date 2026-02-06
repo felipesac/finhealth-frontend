@@ -20,7 +20,7 @@ const dataTypes = [
 
 export default function ExportarPage() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['accounts']);
-  const [format, setFormat] = useState('csv');
+  const [format] = useState('csv');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [exporting, setExporting] = useState(false);

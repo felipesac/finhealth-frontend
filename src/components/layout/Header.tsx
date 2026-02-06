@@ -12,19 +12,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, Bell } from 'lucide-react';
+import { LogOut, User, Bell, Menu } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { toast } from '@/hooks/use-toast';
 
 interface HeaderProps {
   userEmail?: string;
+  onMobileMenuToggle?: () => void;
 }
 
-export function Header({ userEmail }: HeaderProps) {
+export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
   const router = useRouter();
   const supabase = createClient();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      router.push('/login');
+    } catch {
+      toast({
+        title: 'Erro ao sair',
+        description: 'Nao foi possivel encerrar a sessao. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const initials = userEmail
@@ -34,17 +46,42 @@ export function Header({ userEmail }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-6">
       <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          aria-label="Abrir menu"
+          onClick={onMobileMenuToggle}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
         <h2 className="text-lg font-semibold">Sistema de Gestao Financeira</h2>
       </div>
 
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
+
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Notificacoes"
+          onClick={() =>
+            toast({
+              title: 'Notificacoes',
+              description: 'Modulo de notificacoes sera disponibilizado em breve.',
+            })
+          }
+        >
           <Bell className="h-5 w-5" />
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+            <Button
+              variant="ghost"
+              className="relative h-10 w-10 rounded-full"
+              aria-label="Menu do usuario"
+            >
               <Avatar className="h-10 w-10">
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
@@ -60,7 +97,7 @@ export function Header({ userEmail }: HeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/configuracoes')}>
               <User className="mr-2 h-4 w-4" />
               <span>Perfil</span>
             </DropdownMenuItem>
