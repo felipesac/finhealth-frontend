@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -24,29 +25,49 @@ import {
   Bar,
 } from 'recharts';
 import { formatCurrency } from '@/lib/formatters';
-import { useState } from 'react';
 
-// Sample trend data
-const monthlyData = [
-  { month: 'Jan', faturamento: 125000, glosas: 12500, pagamentos: 110000 },
-  { month: 'Fev', faturamento: 132000, glosas: 15000, pagamentos: 115000 },
-  { month: 'Mar', faturamento: 145000, glosas: 11000, pagamentos: 130000 },
-  { month: 'Abr', faturamento: 138000, glosas: 18000, pagamentos: 118000 },
-  { month: 'Mai', faturamento: 155000, glosas: 14000, pagamentos: 140000 },
-  { month: 'Jun', faturamento: 162000, glosas: 16500, pagamentos: 145000 },
-];
+interface MonthlyData {
+  month: string;
+  faturamento: number;
+  glosas: number;
+  pagamentos: number;
+}
 
-const glosasTrendData = [
-  { month: 'Jan', administrativa: 5000, tecnica: 4500, linear: 3000 },
-  { month: 'Fev', administrativa: 6000, tecnica: 5000, linear: 4000 },
-  { month: 'Mar', administrativa: 4000, tecnica: 4000, linear: 3000 },
-  { month: 'Abr', administrativa: 7000, tecnica: 6000, linear: 5000 },
-  { month: 'Mai', administrativa: 5500, tecnica: 4500, linear: 4000 },
-  { month: 'Jun', administrativa: 6500, tecnica: 5500, linear: 4500 },
-];
+interface GlosasTrendData {
+  month: string;
+  administrativa: number;
+  tecnica: number;
+  linear: number;
+}
+
+interface Forecast {
+  nextMonthBilling: number;
+  billingGrowth: number;
+  estimatedGlosaRisk: number;
+  averageGlosaRate: number;
+}
+
+interface TrendsResponse {
+  monthlyData: MonthlyData[];
+  glosasTrendData: GlosasTrendData[];
+  forecast: Forecast;
+}
+
+const periodMonths: Record<string, number> = { '3m': 3, '6m': 6, '12m': 12 };
 
 export default function TendenciasPage() {
   const [periodo, setPeriodo] = useState('6m');
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<TrendsResponse | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/trends?months=${periodMonths[periodo] || 6}`)
+      .then((res) => res.json())
+      .then((json) => setData(json))
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, [periodo]);
 
   return (
     <div className="space-y-6">
@@ -78,119 +99,132 @@ export default function TendenciasPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Evolucao Financeira</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`} />
-                  <Tooltip
-                    formatter={(value) => formatCurrency(value as number)}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="faturamento"
-                    name="Faturamento"
-                    stroke="#22c55e"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="glosas"
-                    name="Glosas"
-                    stroke="#ef4444"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="pagamentos"
-                    name="Pagamentos"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Tendencia de Glosas por Tipo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={glosasTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`} />
-                  <Tooltip
-                    formatter={(value) => formatCurrency(value as number)}
-                  />
-                  <Legend />
-                  <Bar dataKey="administrativa" name="Administrativa" fill="#ef4444" />
-                  <Bar dataKey="tecnica" name="Tecnica" fill="#f97316" />
-                  <Bar dataKey="linear" name="Linear" fill="#eab308" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">
-                Previsao Proximo Mes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(168000)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                +3.7% em relacao ao mes atual
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">
-                Risco de Glosa Estimado
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {formatCurrency(17500)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Baseado na tendencia dos ultimos 6 meses
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">
-                Taxa Media de Glosa
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">10.2%</div>
-              <p className="text-xs text-muted-foreground">
-                -0.5% em relacao ao periodo anterior
-              </p>
-            </CardContent>
-          </Card>
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      </div>
+      ) : !data ? (
+        <div className="text-center py-20 text-muted-foreground">
+          Erro ao carregar dados de tendencias.
+        </div>
+      ) : (
+        <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Evolucao Financeira</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data.monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`} />
+                    <Tooltip
+                      formatter={(value) => formatCurrency(value as number)}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="faturamento"
+                      name="Faturamento"
+                      stroke="#22c55e"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="glosas"
+                      name="Glosas"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="pagamentos"
+                      name="Pagamentos"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tendencia de Glosas por Tipo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.glosasTrendData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`} />
+                    <Tooltip
+                      formatter={(value) => formatCurrency(value as number)}
+                    />
+                    <Legend />
+                    <Bar dataKey="administrativa" name="Administrativa" fill="#ef4444" />
+                    <Bar dataKey="tecnica" name="Tecnica" fill="#f97316" />
+                    <Bar dataKey="linear" name="Linear" fill="#eab308" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Previsao Proximo Mes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(data.forecast.nextMonthBilling)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {data.forecast.billingGrowth >= 0 ? '+' : ''}
+                  {data.forecast.billingGrowth.toFixed(1)}% em relacao ao mes atual
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Risco de Glosa Estimado
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">
+                  {formatCurrency(data.forecast.estimatedGlosaRisk)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Baseado na media dos ultimos {periodMonths[periodo] || 6} meses
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Taxa Media de Glosa
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {data.forecast.averageGlosaRate.toFixed(1)}%
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Percentual medio do periodo
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

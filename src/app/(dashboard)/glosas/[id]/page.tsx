@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency, formatDate } from '@/lib/formatters';
-import { ArrowLeft, Sparkles, Send } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
+import { AppealForm } from '@/components/glosas/AppealForm';
 import type { Glosa, AppealStatus, GlosaType } from '@/types';
 
 interface PageProps {
@@ -158,28 +158,11 @@ export default async function GlosaDetailPage({ params }: PageProps) {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Texto do Recurso</CardTitle>
-          <CardDescription>
-            Edite o texto do recurso antes de enviar
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            placeholder="Digite a fundamentacao do recurso..."
-            rows={8}
-            defaultValue={glosa.appeal_text || glosa.ai_recommendation || ''}
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline">Salvar Rascunho</Button>
-            <Button>
-              <Send className="mr-2 h-4 w-4" />
-              Enviar Recurso
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <AppealForm
+        glosaId={glosa.id}
+        initialText={glosa.appeal_text || glosa.ai_recommendation || ''}
+        appealStatus={glosa.appeal_status}
+      />
     </div>
   );
 }

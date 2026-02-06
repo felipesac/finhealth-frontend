@@ -51,15 +51,50 @@ export default function ExportarPage() {
 
     setExporting(true);
 
-    // Simulate export process
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const res = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          types: selectedTypes,
+          dateFrom: dateFrom || undefined,
+          dateTo: dateTo || undefined,
+        }),
+      });
 
-    toast({
-      title: 'Exportacao concluida',
-      description: `Arquivo ${format.toUpperCase()} gerado com sucesso`,
-    });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Falha na exportacao');
+      }
 
-    setExporting(false);
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') || '';
+      const filenameMatch = disposition.match(/filename="([^"]+)"/);
+      const filename = filenameMatch ? filenameMatch[1] : `finhealth-export.csv`;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Exportacao concluida',
+        description: `Arquivo CSV gerado com sucesso`,
+      });
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      toast({
+        title: 'Erro na exportacao',
+        description: error.message || 'Tente novamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
