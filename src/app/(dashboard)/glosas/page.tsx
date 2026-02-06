@@ -1,25 +1,38 @@
 import { createClient } from '@/lib/supabase/server';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GlosasTable } from '@/components/glosas';
+import { Pagination } from '@/components/ui/pagination';
 import type { Glosa } from '@/types';
 
-async function getGlosasData() {
-  const supabase = await createClient();
+const PAGE_SIZE = 25;
 
-  const { data: glosas } = await supabase
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+async function getGlosasData(page: number) {
+  const supabase = await createClient();
+  const from = (page - 1) * PAGE_SIZE;
+
+  const { data: glosas, count } = await supabase
     .from('glosas')
     .select(`
       *,
       medical_account:medical_accounts(account_number)
-    `)
+    `, { count: 'exact' })
     .order('priority_score', { ascending: false })
-    .limit(100);
+    .range(from, from + PAGE_SIZE - 1);
 
-  return (glosas || []) as Glosa[];
+  return {
+    glosas: (glosas || []) as Glosa[],
+    total: count || 0,
+  };
 }
 
-export default async function GlosasPage() {
-  const glosas = await getGlosasData();
+export default async function GlosasPage({ searchParams }: PageProps) {
+  const { page: pageStr } = await searchParams;
+  const page = Math.max(1, parseInt(pageStr || '1', 10));
+  const { glosas, total } = await getGlosasData(page);
 
   const pendingGlosas = glosas.filter((g) => g.appeal_status === 'pending');
   const inProgressGlosas = glosas.filter((g) =>
@@ -67,6 +80,8 @@ export default async function GlosasPage() {
           <GlosasTable glosas={glosas} />
         </TabsContent>
       </Tabs>
+
+      <Pagination total={total} pageSize={PAGE_SIZE} currentPage={page} />
     </div>
   );
 }

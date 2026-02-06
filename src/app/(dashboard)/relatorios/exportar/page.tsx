@@ -7,14 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ArrowLeft, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { ArrowLeft, Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const dataTypes = [
@@ -27,7 +20,7 @@ const dataTypes = [
 
 export default function ExportarPage() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['accounts']);
-  const [format, setFormat] = useState('xlsx');
+  const [format, setFormat] = useState('csv');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -183,31 +176,10 @@ export default function ExportarPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Select value={format} onValueChange={setFormat}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o formato" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="xlsx">
-                    <div className="flex items-center gap-2">
-                      <FileSpreadsheet className="h-4 w-4" />
-                      Excel (.xlsx)
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="csv">
-                    <div className="flex items-center gap-2">
-                      <FileSpreadsheet className="h-4 w-4" />
-                      CSV (.csv)
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="pdf">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      PDF (.pdf)
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <FileSpreadsheet className="h-4 w-4" />
+                CSV (.csv)
+              </div>
 
               <Button
                 className="w-full"

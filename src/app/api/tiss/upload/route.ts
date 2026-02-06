@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 const N8N_WEBHOOK_URL = 'https://n8n.noxtec.com.br/webhook/tiss-upload';
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Nao autorizado' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { xml, accountId } = body;
 

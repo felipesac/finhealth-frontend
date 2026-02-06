@@ -2,24 +2,37 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
 import { TissGuidesList } from '@/components/tiss';
+import { Pagination } from '@/components/ui/pagination';
 import { Upload } from 'lucide-react';
 import type { MedicalAccount } from '@/types';
 
-async function getTissData() {
-  const supabase = await createClient();
+const PAGE_SIZE = 25;
 
-  const { data: accounts } = await supabase
-    .from('medical_accounts')
-    .select('*')
-    .not('tiss_guide_number', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(50);
-
-  return (accounts || []) as MedicalAccount[];
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
 }
 
-export default async function TissPage() {
-  const accounts = await getTissData();
+async function getTissData(page: number) {
+  const supabase = await createClient();
+  const from = (page - 1) * PAGE_SIZE;
+
+  const { data: accounts, count } = await supabase
+    .from('medical_accounts')
+    .select('*', { count: 'exact' })
+    .not('tiss_guide_number', 'is', null)
+    .order('created_at', { ascending: false })
+    .range(from, from + PAGE_SIZE - 1);
+
+  return {
+    accounts: (accounts || []) as MedicalAccount[],
+    total: count || 0,
+  };
+}
+
+export default async function TissPage({ searchParams }: PageProps) {
+  const { page: pageStr } = await searchParams;
+  const page = Math.max(1, parseInt(pageStr || '1', 10));
+  const { accounts, total } = await getTissData(page);
 
   return (
     <div className="space-y-6">
@@ -39,6 +52,7 @@ export default async function TissPage() {
       </div>
 
       <TissGuidesList accounts={accounts} />
+      <Pagination total={total} pageSize={PAGE_SIZE} currentPage={page} />
     </div>
   );
 }

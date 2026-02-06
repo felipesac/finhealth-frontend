@@ -60,6 +60,23 @@ export default function TendenciasPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<TrendsResponse | null>(null);
 
+  const handleExport = () => {
+    if (!data) return;
+    const rows = data.monthlyData.map((m) =>
+      [m.month, m.faturamento, m.glosas, m.pagamentos].join(',')
+    );
+    const csv = ['Mes,Faturamento,Glosas,Pagamentos', ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `finhealth-tendencias-${periodo}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
     setLoading(true);
     fetch(`/api/trends?months=${periodMonths[periodo] || 6}`)
@@ -93,7 +110,7 @@ export default function TendenciasPage() {
             <SelectItem value="12m">12 meses</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleExport} disabled={!data}>
           <Download className="mr-2 h-4 w-4" />
           Exportar
         </Button>

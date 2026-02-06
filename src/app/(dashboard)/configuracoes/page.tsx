@@ -46,6 +46,10 @@ export default function ConfiguracoesPage() {
   };
 
   const handleChangePassword = async () => {
+    if (!currentPassword) {
+      toast({ title: 'Digite a senha atual', variant: 'destructive' });
+      return;
+    }
     if (!newPassword || newPassword.length < 6) {
       toast({ title: 'A nova senha deve ter pelo menos 6 caracteres', variant: 'destructive' });
       return;
@@ -53,6 +57,17 @@ export default function ConfiguracoesPage() {
     setChangingPassword(true);
     try {
       const supabase = createClient();
+
+      // Verify current password by re-authenticating
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+      });
+      if (signInError) {
+        toast({ title: 'Senha atual incorreta', variant: 'destructive' });
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
