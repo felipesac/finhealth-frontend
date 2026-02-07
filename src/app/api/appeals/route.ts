@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { appealSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
+import { checkPermission } from '@/lib/rbac';
 
 export async function PATCH(request: Request) {
   try {
@@ -16,11 +17,11 @@ export async function PATCH(request: Request) {
     }
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
+    const auth = await checkPermission(supabase, 'appeals:write');
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    const user = { id: auth.userId, email: auth.email };
 
     const body = await request.json();
     const parsed = appealSchema.safeParse(body);

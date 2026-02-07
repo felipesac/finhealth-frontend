@@ -4,6 +4,7 @@ import { tissUploadSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { sanitizeXml } from '@/lib/sanitize-xml';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
+import { checkPermission } from '@/lib/rbac';
 
 const N8N_WEBHOOK_URL = process.env.N8N_TISS_WEBHOOK_URL;
 const MAX_XML_SIZE = 5 * 1024 * 1024; // 5MB
@@ -27,14 +28,14 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const auth = await checkPermission(supabase, 'tiss:write');
+    if (!auth.authorized) {
       return NextResponse.json(
-        { success: false, error: 'Nao autorizado' },
-        { status: 401 }
+        { success: false, error: auth.error },
+        { status: auth.status }
       );
     }
+    const user = { id: auth.userId, email: auth.email };
 
     const body = await request.json();
     const parsed = tissUploadSchema.safeParse(body);

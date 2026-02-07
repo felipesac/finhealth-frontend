@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkPermission } from '@/lib/rbac';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,10 +9,9 @@ export async function GET(request: Request) {
 
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
+    const auth = await checkPermission(supabase, 'tiss:read');
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     let query = supabase

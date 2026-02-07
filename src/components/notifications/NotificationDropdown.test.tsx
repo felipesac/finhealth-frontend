@@ -43,9 +43,12 @@ describe('NotificationDropdown', () => {
     });
   });
 
-  it('renders notification bell button', () => {
+  it('renders notification bell button', async () => {
     render(<NotificationDropdown />);
     expect(screen.getByLabelText(/Notificacoes/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalled();
+    });
   });
 
   it('fetches notifications on mount', async () => {

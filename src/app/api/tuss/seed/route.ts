@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkPermission } from '@/lib/rbac';
 
 // Common TUSS procedures data
 const TUSS_PROCEDURES = [
@@ -85,10 +86,9 @@ const TUSS_PROCEDURES = [
 export async function POST() {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
+    const auth = await checkPermission(supabase, 'admin:all');
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const { data, error } = await supabase

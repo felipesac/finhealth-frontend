@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkPermission } from '@/lib/rbac';
 
 export async function GET() {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
+    const auth = await checkPermission(supabase, 'notifications:read');
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    const user = { id: auth.userId, email: auth.email };
 
     const { data: notifications, error } = await supabase
       .from('notifications')
@@ -36,11 +37,11 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
+    const auth = await checkPermission(supabase, 'notifications:write');
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    const user = { id: auth.userId, email: auth.email };
 
     const body = await request.json();
     const { id, markAllRead } = body as { id?: string; markAllRead?: boolean };

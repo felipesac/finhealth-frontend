@@ -60,6 +60,16 @@ describe('POST /api/tiss/upload', () => {
     expect(res.status).toBe(401);
   });
 
+  it('returns 403 when user lacks tiss:write permission', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: 'user-1', email: 'auditor@test.com', user_metadata: { role: 'auditor' } } },
+    });
+    const res = await POST(makeReq({ xml: VALID_XML }));
+    expect(res.status).toBe(403);
+    const json = await res.json();
+    expect(json.error).toBe('Permissao insuficiente');
+  });
+
   it('returns 400 when xml is missing', async () => {
     const res = await POST(makeReq({}));
     expect(res.status).toBe(400);

@@ -89,3 +89,24 @@ export async function requirePermission(
   if (!hasPermission(userInfo.role, permission)) return null;
   return userInfo;
 }
+
+/**
+ * Check auth + RBAC for API routes. Returns user info or an error object
+ * with the appropriate HTTP status (401 = not authenticated, 403 = forbidden).
+ */
+export async function checkPermission(
+  supabase: SupabaseClient,
+  permission: Permission
+): Promise<
+  | { authorized: true; userId: string; email: string; role: UserRole }
+  | { authorized: false; status: 401 | 403; error: string }
+> {
+  const userInfo = await getUserRole(supabase);
+  if (!userInfo) {
+    return { authorized: false, status: 401, error: 'Nao autorizado' };
+  }
+  if (!hasPermission(userInfo.role, permission)) {
+    return { authorized: false, status: 403, error: 'Permissao insuficiente' };
+  }
+  return { authorized: true, ...userInfo };
+}
