@@ -5,36 +5,37 @@ import type { DashboardMetrics, MedicalAccount } from '@/types';
 async function getDashboardData() {
   const supabase = await createClient();
 
-  // Fetch accounts
-  const { data: accounts } = await supabase
-    .from('medical_accounts')
-    .select('total_amount, glosa_amount, paid_amount, status');
+  // Fetch all data in parallel
+  const [accountsRes, glosasRes, paymentsRes, recentAccountsRes] = await Promise.all([
+    supabase
+      .from('medical_accounts')
+      .select('total_amount, glosa_amount, paid_amount, status'),
+    supabase
+      .from('glosas')
+      .select('glosa_amount, appeal_status, glosa_type'),
+    supabase
+      .from('payments')
+      .select('total_amount'),
+    supabase
+      .from('medical_accounts')
+      .select(`
+        *,
+        patient:patients(name),
+        health_insurer:health_insurers(name)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(5),
+  ]);
 
-  // Fetch glosas
-  const { data: glosas } = await supabase
-    .from('glosas')
-    .select('glosa_amount, appeal_status, glosa_type');
+  if (accountsRes.error || glosasRes.error || paymentsRes.error || recentAccountsRes.error) {
+    const errorMsg = accountsRes.error?.message || glosasRes.error?.message ||
+      paymentsRes.error?.message || recentAccountsRes.error?.message;
+    throw new Error(errorMsg || 'Erro ao carregar dados do dashboard');
+  }
 
-  // Fetch payments
-  const { data: payments } = await supabase
-    .from('payments')
-    .select('total_amount');
-
-  // Fetch recent accounts with relations
-  const { data: recentAccounts } = await supabase
-    .from('medical_accounts')
-    .select(`
-      *,
-      patient:patients(name),
-      health_insurer:health_insurers(name)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(5);
-
-  // Calculate metrics
-  const accountsList = accounts || [];
-  const glosasList = glosas || [];
-  const paymentsList = payments || [];
+  const accountsList = accountsRes.data || [];
+  const glosasList = glosasRes.data || [];
+  const paymentsList = paymentsRes.data || [];
 
   const totalBilling = accountsList.reduce((sum, a) => sum + (a.total_amount || 0), 0);
   const totalGlosas = accountsList.reduce((sum, a) => sum + (a.glosa_amount || 0), 0);
@@ -45,7 +46,6 @@ async function getDashboardData() {
   const totalAppeals = glosasList.filter((g) => g.appeal_status !== 'pending').length;
   const appealSuccessRate = totalAppeals > 0 ? (acceptedAppeals / totalAppeals) * 100 : 0;
 
-  // Glosas breakdown
   const glosasBreakdown = (['administrativa', 'tecnica', 'linear'] as const).map((type) => ({
     type,
     count: glosasList.filter((g) => g.glosa_type === type).length,
@@ -65,7 +65,7 @@ async function getDashboardData() {
 
   return {
     metrics,
-    recentAccounts: (recentAccounts || []) as MedicalAccount[],
+    recentAccounts: (recentAccountsRes.data || []) as MedicalAccount[],
   };
 }
 

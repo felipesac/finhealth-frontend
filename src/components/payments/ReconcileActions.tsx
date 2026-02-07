@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Loader2, Link2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { createClient } from '@/lib/supabase/client';
 import { formatCurrency } from '@/lib/formatters';
 
 interface ReconcileActionsProps {
@@ -21,50 +20,18 @@ export function ReconcileActions({ paymentId, accountId, accountAmount }: Reconc
   const handleReconcile = async () => {
     setReconciling(true);
     try {
-      const supabase = createClient();
+      const res = await fetch('/api/reconcile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId, accountId }),
+      });
 
-      // Get current payment state
-      const { data: payment, error: fetchError } = await supabase
-        .from('payments')
-        .select('total_amount, matched_amount, unmatched_amount')
-        .eq('id', paymentId)
-        .single();
-
-      if (fetchError || !payment) throw new Error('Pagamento nao encontrado');
-
-      const amountToMatch = Math.min(accountAmount, payment.unmatched_amount);
-      const newMatched = payment.matched_amount + amountToMatch;
-      const newUnmatched = payment.total_amount - newMatched;
-      const isFullyMatched = newUnmatched <= 0.01;
-
-      // Update payment
-      const { error: paymentError } = await supabase
-        .from('payments')
-        .update({
-          matched_amount: newMatched,
-          unmatched_amount: Math.max(0, newUnmatched),
-          reconciliation_status: isFullyMatched ? 'matched' : 'partial',
-          reconciled_at: isFullyMatched ? new Date().toISOString() : null,
-        })
-        .eq('id', paymentId);
-
-      if (paymentError) throw paymentError;
-
-      // Update account
-      const { error: accountError } = await supabase
-        .from('medical_accounts')
-        .update({
-          paid_amount: amountToMatch,
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-        })
-        .eq('id', accountId);
-
-      if (accountError) throw accountError;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro na conciliacao');
 
       toast({
         title: 'Conciliacao realizada',
-        description: `${formatCurrency(amountToMatch)} vinculado a esta conta`,
+        description: `${formatCurrency(data.amountMatched || accountAmount)} vinculado a esta conta`,
       });
 
       router.refresh();

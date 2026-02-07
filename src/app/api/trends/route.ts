@@ -19,10 +19,15 @@ interface GlosasByTypeRow {
 
 export async function GET(request: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const months = parseInt(searchParams.get('months') || '6', 10);
-
-    const supabase = await createClient();
 
     const now = new Date();
     const startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);

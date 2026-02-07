@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-const N8N_WEBHOOK_URL = 'https://n8n.noxtec.com.br/webhook/tiss-upload';
+const N8N_WEBHOOK_URL = process.env.N8N_TISS_WEBHOOK_URL || 'https://n8n.noxtec.com.br/webhook/tiss-upload';
 
 export async function POST(request: Request) {
   try {

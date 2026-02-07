@@ -6,22 +6,47 @@ import type { MedicalAccount, HealthInsurer } from '@/types';
 const PAGE_SIZE = 25;
 
 interface PageProps {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    status?: string;
+    type?: string;
+    insurerId?: string;
+    search?: string;
+  }>;
 }
 
-async function getAccountsData(page: number) {
+async function getAccountsData(page: number, filters: {
+  status?: string;
+  type?: string;
+  insurerId?: string;
+  search?: string;
+}) {
   const supabase = await createClient();
   const from = (page - 1) * PAGE_SIZE;
 
-  const { data: accounts, count } = await supabase
+  let query = supabase
     .from('medical_accounts')
     .select(`
       *,
       patient:patients(name),
       health_insurer:health_insurers(name)
     `, { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, from + PAGE_SIZE - 1);
+    .order('created_at', { ascending: false });
+
+  if (filters.status && filters.status !== 'all') {
+    query = query.eq('status', filters.status);
+  }
+  if (filters.type && filters.type !== 'all') {
+    query = query.eq('account_type', filters.type);
+  }
+  if (filters.insurerId && filters.insurerId !== 'all') {
+    query = query.eq('health_insurer_id', filters.insurerId);
+  }
+  if (filters.search) {
+    query = query.ilike('account_number', `%${filters.search}%`);
+  }
+
+  const { data: accounts, count } = await query.range(from, from + PAGE_SIZE - 1);
 
   const { data: insurers } = await supabase
     .from('health_insurers')
@@ -37,9 +62,15 @@ async function getAccountsData(page: number) {
 }
 
 export default async function ContasPage({ searchParams }: PageProps) {
-  const { page: pageStr } = await searchParams;
-  const page = Math.max(1, parseInt(pageStr || '1', 10));
-  const { accounts, insurers, total } = await getAccountsData(page);
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || '1', 10));
+  const filters = {
+    status: params.status,
+    type: params.type,
+    insurerId: params.insurerId,
+    search: params.search,
+  };
+  const { accounts, insurers, total } = await getAccountsData(page, filters);
 
   return (
     <div className="space-y-6">

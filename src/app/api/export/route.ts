@@ -50,6 +50,13 @@ function buildCSV(columns: string[], rows: Record<string, unknown>[]): string {
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { types, dateFrom, dateTo } = body as {
       types: string[];
@@ -61,7 +68,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Selecione pelo menos um tipo' }, { status: 400 });
     }
 
-    const supabase = await createClient();
     const allSheets: { name: string; csv: string }[] = [];
 
     for (const type of types) {
@@ -100,9 +106,14 @@ export async function POST(request: Request) {
       });
     }
 
-    // Multiple types: combine with section headers
+    // Multiple types: one CSV per type, concatenated with a blank line separator
+    // Each section prefixed with the type name as a comment row
     const combined = allSheets
-      .map((s) => `=== ${s.name.toUpperCase()} ===\n${s.csv}`)
+      .map((s) => {
+        const typeHeader = s.csv.split('\n')[0];
+        const typeRows = s.csv.split('\n').slice(1);
+        return [`# ${s.name.toUpperCase()}`, typeHeader, ...typeRows].join('\n');
+      })
       .join('\n\n');
 
     return new NextResponse(combined, {

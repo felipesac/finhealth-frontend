@@ -7,40 +7,57 @@ import type { Glosa } from '@/types';
 const PAGE_SIZE = 25;
 
 interface PageProps {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; tab?: string }>;
 }
 
-async function getGlosasData(page: number) {
+async function getGlosasData(page: number, tab: string) {
   const supabase = await createClient();
   const from = (page - 1) * PAGE_SIZE;
 
-  const { data: glosas, count } = await supabase
+  // Build filtered query based on tab
+  let query = supabase
     .from('glosas')
     .select(`
       *,
       medical_account:medical_accounts(account_number)
     `, { count: 'exact' })
-    .order('priority_score', { ascending: false })
-    .range(from, from + PAGE_SIZE - 1);
+    .order('priority_score', { ascending: false });
+
+  if (tab === 'pending') {
+    query = query.eq('appeal_status', 'pending');
+  } else if (tab === 'in_progress') {
+    query = query.in('appeal_status', ['in_progress', 'sent']);
+  } else if (tab === 'resolved') {
+    query = query.in('appeal_status', ['accepted', 'rejected']);
+  }
+
+  const { data: glosas, count } = await query.range(from, from + PAGE_SIZE - 1);
+
+  // Get counts for each tab (separate queries for accurate totals)
+  const [pendingRes, inProgressRes, resolvedRes, allRes] = await Promise.all([
+    supabase.from('glosas').select('id', { count: 'exact', head: true }).eq('appeal_status', 'pending'),
+    supabase.from('glosas').select('id', { count: 'exact', head: true }).in('appeal_status', ['in_progress', 'sent']),
+    supabase.from('glosas').select('id', { count: 'exact', head: true }).in('appeal_status', ['accepted', 'rejected']),
+    supabase.from('glosas').select('id', { count: 'exact', head: true }),
+  ]);
 
   return {
     glosas: (glosas || []) as Glosa[],
     total: count || 0,
+    counts: {
+      pending: pendingRes.count || 0,
+      inProgress: inProgressRes.count || 0,
+      resolved: resolvedRes.count || 0,
+      all: allRes.count || 0,
+    },
   };
 }
 
 export default async function GlosasPage({ searchParams }: PageProps) {
-  const { page: pageStr } = await searchParams;
-  const page = Math.max(1, parseInt(pageStr || '1', 10));
-  const { glosas, total } = await getGlosasData(page);
-
-  const pendingGlosas = glosas.filter((g) => g.appeal_status === 'pending');
-  const inProgressGlosas = glosas.filter((g) =>
-    ['in_progress', 'sent'].includes(g.appeal_status)
-  );
-  const resolvedGlosas = glosas.filter((g) =>
-    ['accepted', 'rejected'].includes(g.appeal_status)
-  );
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || '1', 10));
+  const tab = params.tab || 'pending';
+  const { glosas, total, counts } = await getGlosasData(page, tab);
 
   return (
     <div className="space-y-6">
@@ -51,32 +68,23 @@ export default async function GlosasPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      <Tabs defaultValue="pending" className="space-y-4">
+      <Tabs defaultValue={tab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="pending">
-            Pendentes ({pendingGlosas.length})
+          <TabsTrigger value="pending" asChild>
+            <a href={`/glosas?tab=pending`}>Pendentes ({counts.pending})</a>
           </TabsTrigger>
-          <TabsTrigger value="in_progress">
-            Em Recurso ({inProgressGlosas.length})
+          <TabsTrigger value="in_progress" asChild>
+            <a href={`/glosas?tab=in_progress`}>Em Recurso ({counts.inProgress})</a>
           </TabsTrigger>
-          <TabsTrigger value="resolved">
-            Resolvidas ({resolvedGlosas.length})
+          <TabsTrigger value="resolved" asChild>
+            <a href={`/glosas?tab=resolved`}>Resolvidas ({counts.resolved})</a>
           </TabsTrigger>
-          <TabsTrigger value="all">
-            Todas ({glosas.length})
+          <TabsTrigger value="all" asChild>
+            <a href={`/glosas?tab=all`}>Todas ({counts.all})</a>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending">
-          <GlosasTable glosas={pendingGlosas} />
-        </TabsContent>
-        <TabsContent value="in_progress">
-          <GlosasTable glosas={inProgressGlosas} />
-        </TabsContent>
-        <TabsContent value="resolved">
-          <GlosasTable glosas={resolvedGlosas} />
-        </TabsContent>
-        <TabsContent value="all">
+        <TabsContent value={tab} forceMount>
           <GlosasTable glosas={glosas} />
         </TabsContent>
       </Tabs>

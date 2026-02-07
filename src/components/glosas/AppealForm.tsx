@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Save, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { createClient } from '@/lib/supabase/client';
 
 interface AppealFormProps {
   glosaId: string;
@@ -29,16 +28,14 @@ export function AppealForm({ glosaId, initialText, appealStatus }: AppealFormPro
 
     setSaving(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('glosas')
-        .update({
-          appeal_text: text,
-          appeal_status: 'in_progress',
-        })
-        .eq('id', glosaId);
+      const res = await fetch('/api/appeals', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ glosaId, text, action: 'save_draft' }),
+      });
 
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao salvar rascunho');
 
       toast({ title: 'Rascunho salvo com sucesso' });
     } catch (err: unknown) {
@@ -61,17 +58,14 @@ export function AppealForm({ glosaId, initialText, appealStatus }: AppealFormPro
 
     setSubmitting(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('glosas')
-        .update({
-          appeal_text: text,
-          appeal_status: 'sent',
-          appeal_sent_at: new Date().toISOString(),
-        })
-        .eq('id', glosaId);
+      const res = await fetch('/api/appeals', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ glosaId, text, action: 'submit' }),
+      });
 
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao enviar recurso');
 
       toast({ title: 'Recurso enviado com sucesso' });
     } catch (err: unknown) {
