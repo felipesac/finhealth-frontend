@@ -1,6 +1,12 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, PieChart, TrendingUp, FileSpreadsheet } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Relatorios | FinHealth',
+  description: 'Acesse relatorios e analises financeiras',
+};
 
 const reports = [
   {

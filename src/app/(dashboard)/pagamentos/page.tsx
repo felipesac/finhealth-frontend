@@ -1,9 +1,15 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PaymentsTable } from '@/components/payments/PaymentsTable';
 import { Pagination } from '@/components/ui/pagination';
 import { formatCurrency } from '@/lib/formatters';
 import type { Payment } from '@/types';
+
+export const metadata: Metadata = {
+  title: 'Pagamentos | FinHealth',
+  description: 'Gestao de pagamentos recebidos e conciliacao bancaria',
+};
 
 const PAGE_SIZE = 25;
 

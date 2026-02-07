@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { exportSchema } from '@/lib/validations';
 
 type TableName = 'accounts' | 'glosas' | 'payments' | 'patients' | 'insurers';
 
@@ -58,15 +59,13 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { types, dateFrom, dateTo } = body as {
-      types: string[];
-      dateFrom?: string;
-      dateTo?: string;
-    };
+    const parsed = exportSchema.safeParse(body);
 
-    if (!types || types.length === 0) {
-      return NextResponse.json({ error: 'Selecione pelo menos um tipo' }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
+
+    const { types, dateFrom, dateTo } = parsed.data;
 
     const allSheets: { name: string; csv: string }[] = [];
 

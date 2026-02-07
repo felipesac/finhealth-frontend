@@ -1,8 +1,14 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
 import { TissUploadForm } from '@/components/tiss';
 import { ArrowLeft } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Upload TISS | FinHealth',
+  description: 'Envie um arquivo XML TISS para validacao',
+};
 
 async function getAccounts() {
   const supabase = await createClient();

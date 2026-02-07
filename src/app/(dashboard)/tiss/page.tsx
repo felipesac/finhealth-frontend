@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,11 @@ import { TissGuidesList } from '@/components/tiss';
 import { Pagination } from '@/components/ui/pagination';
 import { Upload } from 'lucide-react';
 import type { MedicalAccount } from '@/types';
+
+export const metadata: Metadata = {
+  title: 'TISS | FinHealth',
+  description: 'Gerencie as guias TISS e uploads de XML',
+};
 
 const PAGE_SIZE = 25;
 

@@ -1,7 +1,13 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { AccountsTable, AccountFilters } from '@/components/accounts';
 import { Pagination } from '@/components/ui/pagination';
 import type { MedicalAccount, HealthInsurer } from '@/types';
+
+export const metadata: Metadata = {
+  title: 'Contas Medicas | FinHealth',
+  description: 'Gerencie as contas medicas e guias TISS',
+};
 
 const PAGE_SIZE = 25;
 

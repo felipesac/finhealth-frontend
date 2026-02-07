@@ -1,8 +1,14 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GlosasTable } from '@/components/glosas';
 import { Pagination } from '@/components/ui/pagination';
 import type { Glosa } from '@/types';
+
+export const metadata: Metadata = {
+  title: 'Glosas | FinHealth',
+  description: 'Gerencie as glosas e recursos',
+};
 
 const PAGE_SIZE = 25;
 

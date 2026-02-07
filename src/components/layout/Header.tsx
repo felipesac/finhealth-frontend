@@ -12,8 +12,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, Bell, Menu } from 'lucide-react';
+import { LogOut, User, Menu } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { toast } from '@/hooks/use-toast';
 
 interface HeaderProps {
@@ -61,19 +62,7 @@ export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
       <div className="flex items-center gap-2">
         <ThemeToggle />
 
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Notificacoes"
-          onClick={() =>
-            toast({
-              title: 'Notificacoes',
-              description: 'Modulo de notificacoes sera disponibilizado em breve.',
-            })
-          }
-        >
-          <Bell className="h-5 w-5" />
-        </Button>
+        <NotificationDropdown />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

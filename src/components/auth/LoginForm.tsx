@@ -8,11 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
+import { loginSchema } from '@/lib/validations';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -20,12 +22,25 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
+
+    const parsed = loginSchema.safeParse({ email, password });
+    if (!parsed.success) {
+      const errors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as string;
+        errors[field] = issue.message;
+      }
+      setFieldErrors(errors);
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: parsed.data.email,
+        password: parsed.data.password,
       });
 
       if (error) {
@@ -61,6 +76,9 @@ export function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
+            {fieldErrors.email && (
+              <p className="text-xs text-destructive">{fieldErrors.email}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
@@ -72,6 +90,9 @@ export function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {fieldErrors.password && (
+              <p className="text-xs text-destructive">{fieldErrors.password}</p>
+            )}
           </div>
           {error && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">

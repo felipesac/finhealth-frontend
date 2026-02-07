@@ -1,6 +1,12 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { MetricsGrid, GlosasChart, RecentAccounts } from '@/components/dashboard';
 import type { DashboardMetrics, MedicalAccount } from '@/types';
+
+export const metadata: Metadata = {
+  title: 'Dashboard | FinHealth',
+  description: 'Visao geral do faturamento hospitalar',
+};
 
 async function getDashboardData() {
   const supabase = await createClient();

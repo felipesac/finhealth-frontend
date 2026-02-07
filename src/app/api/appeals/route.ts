@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { appealSchema } from '@/lib/validations';
 
 export async function PATCH(request: Request) {
   try {
@@ -11,15 +12,13 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { glosaId, text, action } = body as {
-      glosaId: string;
-      text: string;
-      action: 'save_draft' | 'submit';
-    };
+    const parsed = appealSchema.safeParse(body);
 
-    if (!glosaId || !text?.trim()) {
-      return NextResponse.json({ error: 'Campos obrigatorios: glosaId, text' }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
+
+    const { glosaId, text, action } = parsed.data;
 
     if (action === 'submit') {
       const { error } = await supabase
