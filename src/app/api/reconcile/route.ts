@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { reconcileSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
+import { auditLog, getClientIp } from '@/lib/audit-logger';
 
 export async function POST(request: Request) {
   try {
@@ -116,6 +117,14 @@ export async function POST(request: Request) {
 
       throw accountError;
     }
+
+    auditLog(supabase, user.id, {
+      action: 'reconcile.match',
+      resource: 'payments',
+      resource_id: paymentId,
+      details: { accountId, amountMatched: amountToMatch, isFullyMatched },
+      ip: getClientIp(request),
+    });
 
     return NextResponse.json({
       success: true,

@@ -68,7 +68,7 @@ export function AccountsTable({ accounts }: AccountsTableProps) {
           ))}
           {accounts.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8" role="status">
                 Nenhuma conta encontrada
               </TableCell>
             </TableRow>

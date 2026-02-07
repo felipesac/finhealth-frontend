@@ -198,11 +198,13 @@ export function TissUploadForm({ accounts }: TissUploadFormProps) {
           </div>
         )}
 
-        {uploading && <Progress value={progress} className="h-2" />}
+        {uploading && (
+          <Progress value={progress} className="h-2" aria-label="Progresso do upload" />
+        )}
 
         {uploadError && (
-          <div className="flex items-center gap-2 rounded-md bg-red-50 p-4 text-red-700">
-            <XCircle className="h-5 w-5 shrink-0" />
+          <div className="flex items-center gap-2 rounded-md bg-red-50 p-4 text-red-700" role="alert" aria-live="polite">
+            <XCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
             <span className="text-sm">{uploadError}</span>
           </div>
         )}

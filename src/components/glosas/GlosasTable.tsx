@@ -77,6 +77,7 @@ export function GlosasTable({ glosas }: GlosasTableProps) {
                       <Progress
                         value={glosa.success_probability * 100}
                         className="h-2 w-16"
+                        aria-label={`Probabilidade de sucesso: ${(glosa.success_probability * 100).toFixed(0)}%`}
                       />
                       <span className="text-sm">
                         {(glosa.success_probability * 100).toFixed(0)}%
@@ -93,7 +94,7 @@ export function GlosasTable({ glosas }: GlosasTableProps) {
           })}
           {glosas.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8" role="status">
                 Nenhuma glosa encontrada
               </TableCell>
             </TableRow>

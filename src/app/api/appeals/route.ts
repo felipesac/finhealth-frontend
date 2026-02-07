@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { appealSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
+import { auditLog, getClientIp } from '@/lib/audit-logger';
 
 export async function PATCH(request: Request) {
   try {
@@ -41,6 +42,14 @@ export async function PATCH(request: Request) {
         .eq('id', glosaId);
 
       if (error) throw error;
+
+      auditLog(supabase, user.id, {
+        action: 'appeal.submit',
+        resource: 'glosas',
+        resource_id: glosaId,
+        ip: getClientIp(request),
+      });
+
       return NextResponse.json({ success: true, message: 'Recurso enviado com sucesso' });
     }
 
@@ -54,6 +63,14 @@ export async function PATCH(request: Request) {
       .eq('id', glosaId);
 
     if (error) throw error;
+
+    auditLog(supabase, user.id, {
+      action: 'appeal.save_draft',
+      resource: 'glosas',
+      resource_id: glosaId,
+      ip: getClientIp(request),
+    });
+
     return NextResponse.json({ success: true, message: 'Rascunho salvo com sucesso' });
   } catch (err: unknown) {
     const error = err as { message?: string };

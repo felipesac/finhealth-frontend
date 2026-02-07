@@ -1,3 +1,6 @@
+// User roles for RBAC
+export type UserRole = 'admin' | 'finance_manager' | 'auditor' | 'tiss_operator';
+
 // Database entity types matching Supabase schema
 
 export type AccountType = 'internacao' | 'ambulatorial' | 'sadt' | 'honorarios';

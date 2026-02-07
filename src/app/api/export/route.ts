@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { exportSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
+import { auditLog, getClientIp } from '@/lib/audit-logger';
 
 type TableName = 'accounts' | 'glosas' | 'payments' | 'patients' | 'insurers';
 
@@ -105,6 +106,13 @@ export async function POST(request: Request) {
       const csv = buildCSV(config.columns, (data || []) as unknown as Record<string, unknown>[]);
       allSheets.push({ name: type, csv });
     }
+
+    auditLog(supabase, user.id, {
+      action: 'data.export',
+      resource: 'export',
+      details: { types, dateFrom, dateTo, rowCounts: allSheets.map((s) => ({ name: s.name, rows: s.csv.split('\n').length - 1 })) },
+      ip: getClientIp(request),
+    });
 
     if (allSheets.length === 1) {
       return new NextResponse(allSheets[0].csv, {

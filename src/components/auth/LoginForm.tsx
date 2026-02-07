@@ -77,7 +77,7 @@ export function LoginForm() {
               required
             />
             {fieldErrors.email && (
-              <p className="text-xs text-destructive">{fieldErrors.email}</p>
+              <p className="text-xs text-destructive" role="alert">{fieldErrors.email}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -91,11 +91,11 @@ export function LoginForm() {
               required
             />
             {fieldErrors.password && (
-              <p className="text-xs text-destructive">{fieldErrors.password}</p>
+              <p className="text-xs text-destructive" role="alert">{fieldErrors.password}</p>
             )}
           </div>
           {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive" role="alert" aria-live="polite">
               {error}
             </div>
           )}

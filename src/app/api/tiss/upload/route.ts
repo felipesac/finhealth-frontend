@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { tissUploadSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { sanitizeXml } from '@/lib/sanitize-xml';
+import { auditLog, getClientIp } from '@/lib/audit-logger';
 
 const N8N_WEBHOOK_URL = process.env.N8N_TISS_WEBHOOK_URL;
 const MAX_XML_SIZE = 5 * 1024 * 1024; // 5MB
@@ -71,6 +72,15 @@ export async function POST(request: Request) {
     }
 
     const result = await n8nResponse.json();
+
+    auditLog(supabase, user.id, {
+      action: 'tiss.upload',
+      resource: 'medical_accounts',
+      resource_id: accountId,
+      details: { xmlSize: xml.length },
+      ip: getClientIp(request),
+    });
+
     return NextResponse.json(result);
   } catch (error: unknown) {
     const err = error as { message?: string };
