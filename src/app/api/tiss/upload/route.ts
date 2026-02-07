@@ -71,7 +71,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await n8nResponse.json();
+    const responseText = await n8nResponse.text();
+    const result = responseText
+      ? JSON.parse(responseText)
+      : { success: true, message: 'Upload processado pelo n8n' };
 
     auditLog(supabase, user.id, {
       action: 'tiss.upload',
