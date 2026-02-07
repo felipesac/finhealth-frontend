@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { exportSchema } from '@/lib/validations';
+import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 type TableName = 'accounts' | 'glosas' | 'payments' | 'patients' | 'insurers';
 
@@ -51,6 +52,15 @@ function buildCSV(columns: string[], rows: Record<string, unknown>[]): string {
 
 export async function POST(request: Request) {
   try {
+    const rlKey = getRateLimitKey(request, 'export');
+    const { success: allowed } = rateLimit(rlKey, { limit: 5, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 

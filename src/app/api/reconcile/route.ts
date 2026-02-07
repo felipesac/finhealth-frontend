@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { reconcileSchema } from '@/lib/validations';
+import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    const rlKey = getRateLimitKey(request, 'reconcile');
+    const { success: allowed } = rateLimit(rlKey, { limit: 20, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -20,15 +30,23 @@ export async function POST(request: Request) {
 
     const { paymentId, accountId } = parsed.data;
 
-    // Get current payment state
+    // Get current payment state with reconciliation_status for optimistic locking
     const { data: payment, error: paymentFetchError } = await supabase
       .from('payments')
-      .select('total_amount, matched_amount, unmatched_amount')
+      .select('total_amount, matched_amount, unmatched_amount, reconciliation_status')
       .eq('id', paymentId)
       .single();
 
     if (paymentFetchError || !payment) {
       return NextResponse.json({ error: 'Pagamento nao encontrado' }, { status: 404 });
+    }
+
+    // Optimistic locking: reject if already fully matched
+    if (payment.reconciliation_status === 'matched') {
+      return NextResponse.json(
+        { error: 'Pagamento ja foi conciliado. Atualize a pagina.' },
+        { status: 409 }
+      );
     }
 
     // Get account state
@@ -77,8 +95,8 @@ export async function POST(request: Request) {
       .eq('id', accountId);
 
     if (accountError) {
-      // Rollback payment update
-      await supabase
+      // Rollback payment update and verify it succeeded
+      const { error: rollbackError } = await supabase
         .from('payments')
         .update({
           matched_amount: payment.matched_amount,
@@ -87,6 +105,14 @@ export async function POST(request: Request) {
           reconciled_at: null,
         })
         .eq('id', paymentId);
+
+      if (rollbackError) {
+        console.error('CRITICAL: Rollback failed for payment', paymentId, rollbackError);
+        return NextResponse.json(
+          { error: 'Erro critico na conciliacao. Contate o administrador.' },
+          { status: 500 }
+        );
+      }
 
       throw accountError;
     }

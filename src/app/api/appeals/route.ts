@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { appealSchema } from '@/lib/validations';
+import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 export async function PATCH(request: Request) {
   try {
+    const rlKey = getRateLimitKey(request, 'appeals');
+    const { success: allowed } = rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 

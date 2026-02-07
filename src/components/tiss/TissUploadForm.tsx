@@ -14,6 +14,10 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Upload, FileText, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 interface ValidationResult {
   isValid: boolean;
   errors: string[];
@@ -61,6 +65,23 @@ export function TissUploadForm({ accounts }: TissUploadFormProps) {
     onDrop,
     accept: { 'text/xml': ['.xml'], 'application/xml': ['.xml'] },
     maxFiles: 1,
+    maxSize: MAX_FILE_SIZE,
+    onDropRejected: (rejections) => {
+      const error = rejections[0]?.errors[0];
+      if (error?.code === 'file-too-large') {
+        toast({
+          title: 'Arquivo muito grande',
+          description: 'O tamanho maximo permitido e 5MB.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Arquivo invalido',
+          description: error?.message || 'Selecione um arquivo XML valido.',
+          variant: 'destructive',
+        });
+      }
+    },
   });
 
   const handleUpload = async () => {
@@ -71,25 +92,24 @@ export function TissUploadForm({ accounts }: TissUploadFormProps) {
     setValidationResult(null);
     setUploadError(null);
 
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => Math.min(prev + 5, 80));
-    }, 300);
-
     try {
+      // Stage 1: Read file (0-30%)
+      setProgress(10);
       const xmlContent = await readFileAsText(file);
-      setProgress(85);
+      setProgress(30);
 
+      // Stage 2: Upload to server (30-70%)
+      setProgress(40);
       const response = await fetch('/api/tiss/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ xml: xmlContent, accountId: selectedAccountId }),
       });
+      setProgress(70);
 
-      setProgress(95);
-
+      // Stage 3: Process response (70-100%)
+      setProgress(85);
       const result = await response.json();
-
-      clearInterval(progressInterval);
       setProgress(100);
 
       if (!response.ok || result.success === false) {
@@ -104,7 +124,6 @@ export function TissUploadForm({ accounts }: TissUploadFormProps) {
         guideNumber: result.guideNumber,
       });
     } catch (error: unknown) {
-      clearInterval(progressInterval);
       const err = error as { message?: string };
       setUploadError(err.message || 'Erro de conexao com o servidor');
     } finally {
@@ -158,7 +177,7 @@ export function TissUploadForm({ accounts }: TissUploadFormProps) {
                 Arraste um arquivo XML ou clique para selecionar
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Suporta TISS versao 3.05.00
+                Suporta TISS versao 3.05.00 (max 5MB)
               </p>
             </div>
           )}

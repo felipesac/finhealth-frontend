@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,6 +26,7 @@ interface AppealFormProps {
 }
 
 export function AppealForm({ glosaId, initialText, appealStatus }: AppealFormProps) {
+  const router = useRouter();
   const [text, setText] = useState(initialText);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -49,6 +51,7 @@ export function AppealForm({ glosaId, initialText, appealStatus }: AppealFormPro
       if (!res.ok) throw new Error(data.error || 'Erro ao salvar rascunho');
 
       toast({ title: 'Rascunho salvo com sucesso' });
+      router.refresh();
     } catch (err: unknown) {
       const error = err as { message?: string };
       toast({
@@ -79,6 +82,7 @@ export function AppealForm({ glosaId, initialText, appealStatus }: AppealFormPro
       if (!res.ok) throw new Error(data.error || 'Erro ao enviar recurso');
 
       toast({ title: 'Recurso enviado com sucesso' });
+      router.refresh();
     } catch (err: unknown) {
       const error = err as { message?: string };
       toast({

@@ -1,11 +1,23 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { tissUploadSchema } from '@/lib/validations';
+import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
+import { sanitizeXml } from '@/lib/sanitize-xml';
 
 const N8N_WEBHOOK_URL = process.env.N8N_TISS_WEBHOOK_URL;
+const MAX_XML_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request: Request) {
   try {
+    const rlKey = getRateLimitKey(request, 'tiss-upload');
+    const { success: allowed } = rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
     if (!N8N_WEBHOOK_URL) {
       return NextResponse.json(
         { success: false, error: 'N8N_TISS_WEBHOOK_URL nao configurado' },
@@ -33,7 +45,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const { xml, accountId } = parsed.data;
+    const { xml: rawXml, accountId } = parsed.data;
+
+    if (rawXml.length > MAX_XML_SIZE) {
+      return NextResponse.json(
+        { success: false, error: 'Arquivo XML excede o tamanho maximo de 5MB' },
+        { status: 400 }
+      );
+    }
+
+    const xml = sanitizeXml(rawXml);
 
     const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',

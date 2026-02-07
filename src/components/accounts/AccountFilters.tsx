@@ -1,8 +1,9 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useCallback, useTransition } from 'react';
+import { useCallback, useState, useEffect, useTransition } from 'react';
 import { Input } from '@/components/ui/input';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
   Select,
   SelectContent,
@@ -28,6 +29,15 @@ export function AccountFilters({ insurers }: AccountFiltersProps) {
   const type = searchParams.get('type') || 'all';
   const insurerId = searchParams.get('insurerId') || 'all';
   const search = searchParams.get('search') || '';
+  const [searchInput, setSearchInput] = useState(search);
+  const debouncedSearch = useDebounce(searchInput, 400);
+
+  useEffect(() => {
+    if (debouncedSearch !== search) {
+      updateFilter('search', debouncedSearch);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
 
   const updateFilter = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -54,8 +64,8 @@ export function AccountFilters({ insurers }: AccountFiltersProps) {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Buscar por numero..."
-          defaultValue={search}
-          onChange={(e) => updateFilter('search', e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           className="pl-9"
         />
       </div>
