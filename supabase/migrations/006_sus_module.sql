@@ -81,45 +81,55 @@ ALTER TABLE sus_bpa ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sus_aih ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies: sus_procedures readable by all authenticated users
+DROP POLICY IF EXISTS "Authenticated users can read sus_procedures" ON sus_procedures;
 CREATE POLICY "Authenticated users can read sus_procedures"
   ON sus_procedures FOR SELECT TO authenticated
   USING (true);
 
 -- RLS Policies: sus_bpa - users see own records
+DROP POLICY IF EXISTS "Users read own BPA" ON sus_bpa;
 CREATE POLICY "Users read own BPA" ON sus_bpa
   FOR SELECT TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users insert own BPA" ON sus_bpa;
 CREATE POLICY "Users insert own BPA" ON sus_bpa
   FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users update own BPA" ON sus_bpa;
 CREATE POLICY "Users update own BPA" ON sus_bpa
   FOR UPDATE TO authenticated
   USING (auth.uid() = user_id);
 
 -- RLS Policies: sus_aih - users see own records
+DROP POLICY IF EXISTS "Users read own AIH" ON sus_aih;
 CREATE POLICY "Users read own AIH" ON sus_aih
   FOR SELECT TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users insert own AIH" ON sus_aih;
 CREATE POLICY "Users insert own AIH" ON sus_aih
   FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users update own AIH" ON sus_aih;
 CREATE POLICY "Users update own AIH" ON sus_aih
   FOR UPDATE TO authenticated
   USING (auth.uid() = user_id);
 
 -- Updated_at triggers
+DROP TRIGGER IF EXISTS sus_procedures_updated_at ON sus_procedures;
 CREATE TRIGGER sus_procedures_updated_at
   BEFORE UPDATE ON sus_procedures
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+DROP TRIGGER IF EXISTS sus_bpa_updated_at ON sus_bpa;
 CREATE TRIGGER sus_bpa_updated_at
   BEFORE UPDATE ON sus_bpa
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+DROP TRIGGER IF EXISTS sus_aih_updated_at ON sus_aih;
 CREATE TRIGGER sus_aih_updated_at
   BEFORE UPDATE ON sus_aih
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
