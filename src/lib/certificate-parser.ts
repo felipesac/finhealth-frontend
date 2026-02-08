@@ -1,4 +1,7 @@
-import { X509Certificate, createPrivateKey, type KeyObject } from 'node:crypto';
+import { X509Certificate } from 'node:crypto';
+import { createSecureContext, createServer as createTlsServer, type TLSSocket } from 'node:tls';
+import { connect as tlsConnect } from 'node:tls';
+import { type AddressInfo } from 'node:net';
 
 // ============================================
 // Types
@@ -37,74 +40,49 @@ export const MAX_CERTIFICATE_SIZE = 2 * 1024 * 1024;
 export const ALLOWED_CERTIFICATE_EXTENSIONS = ['.pfx', '.p12'];
 
 // ============================================
-// Minimal DER parser for PKCS#12 cert extraction
+// Certificate extraction via TLS handshake
 // ============================================
 
-function readDerLength(buf: Buffer, offset: number): { length: number; size: number } | null {
-  if (offset >= buf.length) return null;
-  const b = buf[offset];
-  if (b < 0x80) return { length: b, size: 1 };
-  const numBytes = b & 0x7f;
-  if (numBytes === 0 || offset + 1 + numBytes > buf.length) return null;
-  let length = 0;
-  for (let i = 0; i < numBytes; i++) {
-    length = (length << 8) | buf[offset + 1 + i];
-  }
-  return { length, size: 1 + numBytes };
-}
-
-function readDerElement(buf: Buffer, offset: number): { tag: number; totalSize: number } | null {
-  if (offset >= buf.length) return null;
-  const tag = buf[offset];
-  const lenResult = readDerLength(buf, offset + 1);
-  if (!lenResult) return null;
-  const totalSize = 1 + lenResult.size + lenResult.length;
-  if (offset + totalSize > buf.length) return null;
-  return { tag, totalSize };
-}
-
 /**
- * Scan a PFX buffer for DER-encoded X.509 certificates.
- * Brazilian ICP-Brasil A1 certificates store the cert in plaintext within the PFX.
- * The private key is the encrypted portion.
+ * Extract X.509 certificate from a PFX buffer using a local TLS handshake.
+ * Creates a temporary TLS server on localhost, connects a client to trigger
+ * a handshake, and extracts the server certificate from the connection.
  */
-function findCertificatesInPfx(pfxBuffer: Buffer): X509Certificate[] {
-  const certs: X509Certificate[] = [];
+function extractCertViaTls(
+  pfxBuffer: Buffer,
+  password: string
+): Promise<X509Certificate> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      server.close();
+      reject(new Error('Timeout'));
+    }, 5000);
 
-  for (let i = 0; i < pfxBuffer.length - 20; i++) {
-    // X.509 certs start with SEQUENCE tag (0x30)
-    if (pfxBuffer[i] !== 0x30) continue;
+    const server = createTlsServer({ pfx: pfxBuffer, passphrase: password }, (socket: TLSSocket) => {
+      clearTimeout(timer);
+      const cert = socket.getCertificate() as { raw?: Buffer } | null;
+      socket.destroy();
+      server.close();
+      if (cert?.raw) {
+        resolve(new X509Certificate(cert.raw));
+      } else {
+        reject(new Error('No certificate in TLS context'));
+      }
+    });
 
-    const elem = readDerElement(pfxBuffer, i);
-    // Valid certs are at least ~200 bytes
-    if (!elem || elem.totalSize < 200) continue;
+    server.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
 
-    try {
-      const candidateDer = pfxBuffer.subarray(i, i + elem.totalSize);
-      const cert = new X509Certificate(candidateDer);
-      certs.push(cert);
-      i += elem.totalSize - 1; // Skip past this cert
-    } catch {
-      // Not a valid certificate at this position
-    }
-  }
-
-  return certs;
-}
-
-/**
- * Pick the end-entity certificate (not a CA cert) from a list of candidates.
- */
-function selectEndEntityCert(certs: X509Certificate[]): X509Certificate | null {
-  if (certs.length === 0) return null;
-  if (certs.length === 1) return certs[0];
-
-  // Prefer non-CA certificate (the end-entity / leaf cert)
-  for (const cert of certs) {
-    if (!cert.ca) return cert;
-  }
-
-  return certs[0];
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address() as AddressInfo;
+      const client = tlsConnect({ host: '127.0.0.1', port, rejectUnauthorized: false }, () => {
+        setTimeout(() => client.destroy(), 100);
+      });
+      client.on('error', () => client.destroy());
+    });
+  });
 }
 
 // ============================================
@@ -124,7 +102,6 @@ function extractDocuments(subject: string): { cnpj: string | null; cpf: string |
   const cnpjMatch = subject.match(/(\d{14})/);
   if (cnpjMatch) {
     const candidate = cnpjMatch[1];
-    // Basic CNPJ validation: 14 digits, not all the same
     if (!/^(\d)\1{13}$/.test(candidate)) {
       cnpj = candidate;
     }
@@ -150,13 +127,13 @@ function extractDocuments(subject: string): { cnpj: string | null; cpf: string |
 
 /**
  * Parse a PFX/P12 buffer and extract certificate information.
- * Uses Node.js native crypto module for private key validation
- * and a minimal DER scanner for certificate extraction.
+ * Uses node:tls createSecureContext for password validation and
+ * a local TLS handshake to extract the X.509 certificate.
  */
-export function parsePfxCertificate(
+export async function parsePfxCertificate(
   pfxBuffer: Buffer,
   password: string
-): CertificateValidationResult {
+): Promise<CertificateValidationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -168,20 +145,18 @@ export function parsePfxCertificate(
     return { valid: false, certificate: null, errors: ['Senha do certificado obrigatoria'], warnings };
   }
 
-  // Step 1: Validate password and extract private key info
-  let privateKey: KeyObject;
+  // Step 1: Validate PFX and password using tls.createSecureContext
   try {
-    // Node.js supports PKCS#12 format since v15.12.0
-    // TypeScript types may lag behind runtime support
-    privateKey = createPrivateKey({
-      key: pfxBuffer,
-      format: 'pkcs12' as unknown as 'pem',
+    createSecureContext({
+      pfx: pfxBuffer,
       passphrase: password,
-    } as Parameters<typeof createPrivateKey>[0]);
+    });
   } catch (err: unknown) {
     const error = err as { message?: string; code?: string };
+    const msg = error.message || '';
     if (
-      error.message?.includes('mac verify failure') ||
+      msg.includes('mac verify failure') ||
+      msg.includes('INCORRECT_PASSWORD') ||
       error.code === 'ERR_OSSL_PKCS12_MAC_VERIFY_FAILURE'
     ) {
       return { valid: false, certificate: null, errors: ['Senha do certificado incorreta'], warnings };
@@ -189,18 +164,16 @@ export function parsePfxCertificate(
     return {
       valid: false,
       certificate: null,
-      errors: [`Falha ao ler certificado: ${error.message || 'Formato PFX/P12 invalido'}`],
+      errors: [`Falha ao ler certificado: ${msg || 'Formato PFX/P12 invalido'}`],
       warnings,
     };
   }
 
-  const hasPrivateKey = privateKey.type === 'private';
-
-  // Step 2: Extract X.509 certificate from PFX buffer
-  const certs = findCertificatesInPfx(pfxBuffer);
-  const x509 = selectEndEntityCert(certs);
-
-  if (!x509) {
+  // Step 2: Extract X.509 certificate via local TLS handshake
+  let x509: X509Certificate;
+  try {
+    x509 = await extractCertViaTls(pfxBuffer, password);
+  } catch {
     return {
       valid: false,
       certificate: null,
@@ -226,6 +199,7 @@ export function parsePfxCertificate(
   const commonName = extractCommonName(subject);
 
   // A1 certificates: private key in software (PFX file), validity ~1 year
+  const hasPrivateKey = true; // createSecureContext succeeded with PFX = private key is present
   const validityDays = Math.ceil((expiryDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   const isA1 = hasPrivateKey && validityDays <= 400;
 

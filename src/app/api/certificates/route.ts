@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     }
 
     // Parse and validate certificate
-    const result = parsePfxCertificate(pfxBuffer, password);
+    const result = await parsePfxCertificate(pfxBuffer, password);
 
     if (!result.valid || !result.certificate) {
       return NextResponse.json({
