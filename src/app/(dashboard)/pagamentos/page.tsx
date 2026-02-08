@@ -54,15 +54,15 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
   const { payments, total, metrics } = await getPaymentsData(page);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Pagamentos</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Pagamentos</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Gestao de pagamentos recebidos e conciliacao bancaria
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Recebido</CardTitle>

@@ -36,23 +36,28 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r bg-card transition-all duration-300',
-        sidebarCollapsed ? 'w-16' : 'w-64'
+        'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar-background transition-all duration-300',
+        sidebarCollapsed ? 'w-[4.5rem]' : 'w-64'
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between border-b px-4">
+      <div className="flex h-16 items-center justify-between px-4">
         {!sidebarCollapsed && (
-          <span className="text-xl font-bold text-primary">FinHealth</span>
+          <span className="text-lg font-semibold tracking-tight text-primary">
+            FinHealth
+          </span>
         )}
         <button
           onClick={toggleSidebar}
-          className="rounded-md p-2 hover:bg-muted"
+          className={cn(
+            'rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
+            sidebarCollapsed && 'mx-auto'
+          )}
           aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
         >
           <ChevronLeft
             className={cn(
-              'h-5 w-5 transition-transform',
+              'h-4 w-4 transition-transform duration-200',
               sidebarCollapsed && 'rotate-180'
             )}
           />
@@ -60,7 +65,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="space-y-1 p-2" aria-label="Navegacao principal">
+      <nav className="flex-1 space-y-0.5 px-3 py-2" aria-label="Navegacao principal">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -71,16 +76,16 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               href={item.href}
               onClick={onNavigate}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                 isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                sidebarCollapsed && 'justify-center'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                sidebarCollapsed && 'justify-center px-2'
               )}
               title={sidebarCollapsed ? item.label : undefined}
               aria-current={isActive ? 'page' : undefined}
             >
-              <Icon className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
+              <Icon className="h-[1.125rem] w-[1.125rem] flex-shrink-0" aria-hidden="true" />
               {!sidebarCollapsed && <span>{item.label}</span>}
             </Link>
           );

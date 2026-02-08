@@ -92,22 +92,22 @@ export default function ExportarPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Link href="/relatorios">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">Exportar Dados</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Exportar Dados</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Exporte dados do sistema para Excel ou PDF
           </p>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 sm:gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Selecione os Dados</CardTitle>

@@ -9,7 +9,7 @@ interface GlosasChartProps {
   data: DashboardMetrics['glosasBreakdown'];
 }
 
-const COLORS = ['#ef4444', '#f97316', '#eab308'];
+const COLORS = ['hsl(224, 76%, 48%)', 'hsl(162, 63%, 41%)', 'hsl(38, 92%, 50%)'];
 const LABELS: Record<string, string> = {
   administrativa: 'Administrativa',
   tecnica: 'Tecnica',
@@ -29,7 +29,7 @@ export function GlosasChart({ data }: GlosasChartProps) {
         <CardTitle>Glosas por Tipo</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px]">
+        <div className="h-[250px] sm:h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie

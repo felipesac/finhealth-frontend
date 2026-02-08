@@ -57,9 +57,9 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Entrar</CardTitle>
+    <Card className="w-full shadow-md">
+      <CardHeader className="space-y-1 pb-4">
+        <CardTitle className="text-xl">Entrar</CardTitle>
         <CardDescription>
           Digite suas credenciais para acessar o sistema
         </CardDescription>
@@ -75,6 +75,7 @@ export function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
             />
             {fieldErrors.email && (
               <p className="text-xs text-destructive" role="alert">{fieldErrors.email}</p>
@@ -89,13 +90,14 @@ export function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
             />
             {fieldErrors.password && (
               <p className="text-xs text-destructive" role="alert">{fieldErrors.password}</p>
             )}
           </div>
           {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive" role="alert" aria-live="polite">
+            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert" aria-live="polite">
               {error}
             </div>
           )}

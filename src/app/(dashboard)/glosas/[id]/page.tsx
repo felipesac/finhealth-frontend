@@ -66,25 +66,25 @@ export default async function GlosaDetailPage({ params }: PageProps) {
   const successPercentage = (glosa.success_probability || 0) * 100;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Link href="/glosas">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold">Glosa {glosa.glosa_code}</h1>
-          <p className="text-muted-foreground">
+        <div className="flex-1">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Glosa {glosa.glosa_code}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             {glosa.glosa_description || 'Detalhes da glosa'}
           </p>
         </div>
-        <div className="ml-auto">
+        <div>
           <Badge variant={status.variant}>{status.label}</Badge>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Informacoes da Glosa</CardTitle>

@@ -79,17 +79,17 @@ export default async function DashboardPage() {
   const { metrics, recentAccounts } = await getDashboardData();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Visao geral do faturamento hospitalar
         </p>
       </div>
 
       <MetricsGrid metrics={metrics} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         <GlosasChart data={metrics.glosasBreakdown} />
         <RecentAccounts accounts={recentAccounts} />
       </div>

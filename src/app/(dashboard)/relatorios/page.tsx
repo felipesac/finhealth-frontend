@@ -37,15 +37,15 @@ const reports = [
 
 export default function RelatoriosPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Relatorios</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Relatorios</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Acesse relatorios e analises financeiras
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
         {reports.map((report) => {
           const Icon = report.icon;
           return (

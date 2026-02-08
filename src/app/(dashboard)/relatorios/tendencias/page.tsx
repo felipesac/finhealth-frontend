@@ -87,33 +87,35 @@ export default function TendenciasPage() {
   }, [periodo]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Link href="/relatorios">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">Tendencias</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Tendencias</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Analise de tendencias e previsoes financeiras
           </p>
         </div>
-        <Select value={periodo} onValueChange={setPeriodo}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Periodo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="3m">3 meses</SelectItem>
-            <SelectItem value="6m">6 meses</SelectItem>
-            <SelectItem value="12m">12 meses</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button variant="outline" onClick={handleExport} disabled={!data}>
-          <Download className="mr-2 h-4 w-4" />
-          Exportar
-        </Button>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Select value={periodo} onValueChange={setPeriodo}>
+            <SelectTrigger className="w-[130px] sm:w-[150px]">
+              <SelectValue placeholder="Periodo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="3m">3 meses</SelectItem>
+              <SelectItem value="6m">6 meses</SelectItem>
+              <SelectItem value="12m">12 meses</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" onClick={handleExport} disabled={!data}>
+            <Download className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Exportar</span>
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -125,13 +127,13 @@ export default function TendenciasPage() {
           Erro ao carregar dados de tendencias.
         </div>
       ) : (
-        <div className="grid gap-6">
+        <div className="grid gap-4 sm:gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Evolucao Financeira</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[400px]">
+              <div className="h-[280px] sm:h-[350px] lg:h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={data.monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -145,21 +147,21 @@ export default function TendenciasPage() {
                       type="monotone"
                       dataKey="faturamento"
                       name="Faturamento"
-                      stroke="#22c55e"
+                      stroke="hsl(224, 76%, 48%)"
                       strokeWidth={2}
                     />
                     <Line
                       type="monotone"
                       dataKey="glosas"
                       name="Glosas"
-                      stroke="#ef4444"
+                      stroke="hsl(0, 84%, 60%)"
                       strokeWidth={2}
                     />
                     <Line
                       type="monotone"
                       dataKey="pagamentos"
                       name="Pagamentos"
-                      stroke="#3b82f6"
+                      stroke="hsl(162, 63%, 41%)"
                       strokeWidth={2}
                     />
                   </LineChart>
@@ -173,7 +175,7 @@ export default function TendenciasPage() {
               <CardTitle>Tendencia de Glosas por Tipo</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[400px]">
+              <div className="h-[280px] sm:h-[350px] lg:h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data.glosasTrendData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -183,16 +185,16 @@ export default function TendenciasPage() {
                       formatter={(value) => formatCurrency(value as number)}
                     />
                     <Legend />
-                    <Bar dataKey="administrativa" name="Administrativa" fill="#ef4444" />
-                    <Bar dataKey="tecnica" name="Tecnica" fill="#f97316" />
-                    <Bar dataKey="linear" name="Linear" fill="#eab308" />
+                    <Bar dataKey="administrativa" name="Administrativa" fill="hsl(0, 84%, 60%)" />
+                    <Bar dataKey="tecnica" name="Tecnica" fill="hsl(38, 92%, 50%)" />
+                    <Bar dataKey="linear" name="Linear" fill="hsl(224, 76%, 48%)" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 sm:gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">

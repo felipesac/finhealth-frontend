@@ -79,10 +79,10 @@ export default async function ContasPage({ searchParams }: PageProps) {
   const { accounts, insurers, total } = await getAccountsData(page, filters);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Contas Medicas</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Contas Medicas</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Gerencie as contas medicas e guias TISS
         </p>
       </div>

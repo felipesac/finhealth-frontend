@@ -45,8 +45,8 @@ export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
     : 'US';
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-6">
-      <div className="flex items-center gap-4">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/60 bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6 lg:px-8">
+      <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
@@ -56,10 +56,12 @@ export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <h2 className="text-lg font-semibold">Sistema de Gestao Financeira</h2>
+        <h2 className="hidden text-sm font-medium text-muted-foreground sm:block">
+          Sistema de Gestao Financeira
+        </h2>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
         <ThemeToggle />
 
         <NotificationDropdown />
@@ -68,11 +70,13 @@ export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="relative h-10 w-10 rounded-full"
+              className="relative h-9 w-9 rounded-full"
               aria-label="Menu do usuario"
             >
-              <Avatar className="h-10 w-10">
-                <AvatarFallback>{initials}</AvatarFallback>
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary/10 text-xs font-medium text-primary">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>

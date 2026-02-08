@@ -69,27 +69,27 @@ export default async function PaymentDetailPage({ params }: PageProps) {
     : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Link href="/pagamentos">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold">
+        <div className="flex-1">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Pagamento {payment.payment_reference || payment.id.slice(0, 8)}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             {payment.health_insurer?.name || 'Operadora nao identificada'}
           </p>
         </div>
-        <div className="ml-auto">
+        <div>
           <ReconciliationBadge status={payment.reconciliation_status} />
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Detalhes do Pagamento</CardTitle>
