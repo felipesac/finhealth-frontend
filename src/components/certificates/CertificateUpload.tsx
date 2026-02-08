@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils';
 import {
   Upload,
   FileKey,
-  CheckCircle,
   XCircle,
   AlertTriangle,
   Shield,
