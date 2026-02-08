@@ -161,6 +161,30 @@ export interface DashboardMetrics {
   }[];
 }
 
+export type CertificateStatus = 'active' | 'expired' | 'revoked' | 'replaced';
+
+export interface DigitalCertificate {
+  id: string;
+  user_id: string;
+  name: string;
+  common_name: string;
+  serial_number: string;
+  issuer: string;
+  subject: string;
+  valid_from: string;
+  valid_to: string;
+  cnpj?: string;
+  cpf?: string;
+  certificate_type: 'A1';
+  status: CertificateStatus;
+  file_name: string;
+  file_size: number;
+  fingerprint: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
 // API response types
 export interface PaginatedResponse<T> {
   data: T[];

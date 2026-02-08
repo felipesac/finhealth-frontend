@@ -74,3 +74,15 @@ export const tissUploadSchema = z.object({
 });
 
 export type TissUploadInput = z.infer<typeof tissUploadSchema>;
+
+// ============================================
+// Certificate Upload (API)
+// ============================================
+export const certificateUploadSchema = z.object({
+  fileName: z.string().min(1, 'Nome do arquivo obrigatorio'),
+  fileData: z.string().min(1, 'Dados do certificado obrigatorios'),
+  password: z.string().min(1, 'Senha do certificado obrigatoria'),
+  name: z.string().min(1, 'Nome de identificacao obrigatorio').max(100),
+});
+
+export type CertificateUploadInput = z.infer<typeof certificateUploadSchema>;

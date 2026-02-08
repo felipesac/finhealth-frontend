@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
+import { CertificateUpload } from '@/components/certificates/CertificateUpload';
 
 export default function ConfiguracoesPage() {
   const [name, setName] = useState('');
@@ -150,27 +151,13 @@ export default function ConfiguracoesPage() {
               Configure a versao do padrao TISS utilizado
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Versao do Padrao TISS</Label>
-              <p className="text-sm text-muted-foreground">3.05.00</p>
-            </div>
-            <Separator />
-            <div className="space-y-2">
-              <Label>Certificado Digital</Label>
-              <p className="text-sm text-muted-foreground">
-                Nenhum certificado configurado
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toast({ title: 'Funcionalidade em desenvolvimento', description: 'Upload de certificado digital sera disponibilizado em breve.' })}
-              >
-                Configurar Certificado
-              </Button>
-            </div>
+          <CardContent className="space-y-2">
+            <Label>Versao do Padrao TISS</Label>
+            <p className="text-sm text-muted-foreground">3.05.00</p>
           </CardContent>
         </Card>
+
+        <CertificateUpload />
       </div>
     </div>
   );
