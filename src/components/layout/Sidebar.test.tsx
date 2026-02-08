@@ -30,10 +30,16 @@ describe('Sidebar', () => {
     }
   });
 
-  it('renders correct number of nav links', () => {
+  it('renders correct number of nav links and expandable buttons', () => {
     render(<Sidebar />);
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(navItems.length);
+    const itemsWithSub = navItems.filter(i => i.subItems && i.subItems.length > 0);
+    const itemsWithoutSub = navItems.filter(i => !i.subItems || i.subItems.length === 0);
+    // Items with subItems render as buttons, not links
+    expect(links).toHaveLength(itemsWithoutSub.length);
+    for (const item of itemsWithSub) {
+      expect(screen.getByText(item.label).closest('button')).toBeInTheDocument();
+    }
   });
 
   it('highlights active nav item', () => {
