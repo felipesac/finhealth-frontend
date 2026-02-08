@@ -13,14 +13,40 @@ import {
   BarChart3,
   Settings,
   ChevronLeft,
+  Building2,
+  ChevronDown,
 } from 'lucide-react';
+import { useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 
-const navItems = [
+interface SubItem {
+  href: string;
+  label: string;
+}
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  subItems?: SubItem[];
+}
+
+const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/contas', label: 'Contas Medicas', icon: FileText },
   { href: '/glosas', label: 'Glosas', icon: AlertCircle },
   { href: '/pagamentos', label: 'Pagamentos', icon: CreditCard },
   { href: '/tiss', label: 'TISS', icon: Upload },
+  {
+    href: '/sus',
+    label: 'SUS',
+    icon: Building2,
+    subItems: [
+      { href: '/sus/bpa', label: 'BPA' },
+      { href: '/sus/aih', label: 'AIH' },
+      { href: '/sus/sigtap', label: 'SIGTAP' },
+    ],
+  },
   { href: '/relatorios', label: 'Relatorios', icon: BarChart3 },
   { href: '/configuracoes', label: 'Configuracoes', icon: Settings },
 ];
@@ -32,6 +58,18 @@ interface SidebarProps {
 export function Sidebar({ onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    // Auto-expand if currently on a sub-route
+    return navItems
+      .filter((item) => item.subItems && pathname.startsWith(item.href))
+      .map((item) => item.href);
+  });
+
+  const toggleExpanded = (href: string) => {
+    setExpandedItems((prev) =>
+      prev.includes(href) ? prev.filter((h) => h !== href) : [...prev, href]
+    );
+  };
 
   return (
     <aside
@@ -65,10 +103,60 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-0.5 px-3 py-2" aria-label="Navegacao principal">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2" aria-label="Navegacao principal">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
+          const hasSubItems = item.subItems && item.subItems.length > 0;
+          const isExpanded = expandedItems.includes(item.href);
+
+          if (hasSubItems && !sidebarCollapsed) {
+            return (
+              <div key={item.href}>
+                <button
+                  onClick={() => toggleExpanded(item.href)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                    isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  )}
+                >
+                  <Icon className="h-[1.125rem] w-[1.125rem] flex-shrink-0" aria-hidden="true" />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  <ChevronDown
+                    className={cn(
+                      'h-3.5 w-3.5 transition-transform duration-200',
+                      isExpanded && 'rotate-180'
+                    )}
+                  />
+                </button>
+                {isExpanded && (
+                  <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border/50 pl-3">
+                    {item.subItems!.map((sub) => {
+                      const isSubActive = pathname === sub.href;
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={onNavigate}
+                          className={cn(
+                            'block rounded-lg px-3 py-2 text-sm transition-all duration-200',
+                            isSubActive
+                              ? 'font-medium text-primary'
+                              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                          )}
+                          aria-current={isSubActive ? 'page' : undefined}
+                        >
+                          {sub.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
 
           return (
             <Link

@@ -185,6 +185,66 @@ export interface DigitalCertificate {
   updated_at: string;
 }
 
+// SUS types
+export type SusStatus = 'rascunho' | 'validado' | 'enviado' | 'aprovado' | 'rejeitado';
+export type AihTipo = '1' | '5'; // 1=normal, 5=longa permanencia
+
+export interface SusProcedure {
+  id: string;
+  codigo_sigtap: string;
+  nome: string;
+  competencia: string;
+  valor_ambulatorial: number;
+  valor_hospitalar: number;
+  complexidade?: string;
+  modalidade?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SusBpa {
+  id: string;
+  user_id: string;
+  cnes: string;
+  competencia: string;
+  cbo: string;
+  procedimento: string;
+  quantidade: number;
+  cnpj_prestador?: string;
+  patient_id?: string;
+  valor_unitario: number;
+  valor_total: number;
+  status: SusStatus;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  patient?: Patient;
+  sus_procedure?: SusProcedure;
+}
+
+export interface SusAih {
+  id: string;
+  user_id: string;
+  numero_aih: string;
+  patient_id?: string;
+  procedimento_principal: string;
+  procedimento_secundario?: string;
+  data_internacao: string;
+  data_saida?: string;
+  valor: number;
+  tipo_aih: AihTipo;
+  cnes: string;
+  cbo_medico?: string;
+  diarias: number;
+  status: SusStatus;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  patient?: Patient;
+}
+
 // API response types
 export interface PaginatedResponse<T> {
   data: T[];

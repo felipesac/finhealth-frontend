@@ -15,6 +15,7 @@ export type Permission =
   | 'audit:read'
   | 'notifications:read' | 'notifications:write'
   | 'certificates:read' | 'certificates:write'
+  | 'sus:read' | 'sus:write'
   | 'admin:all';
 
 const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
@@ -31,6 +32,7 @@ const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'settings:read', 'settings:write',
     'notifications:read', 'notifications:write',
     'certificates:read', 'certificates:write',
+    'sus:read', 'sus:write',
   ],
   auditor: [
     'accounts:read',

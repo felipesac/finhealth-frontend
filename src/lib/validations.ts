@@ -86,3 +86,35 @@ export const certificateUploadSchema = z.object({
 });
 
 export type CertificateUploadInput = z.infer<typeof certificateUploadSchema>;
+
+// ============================================
+// SUS BPA (API)
+// ============================================
+export const susBpaSchema = z.object({
+  cnes: z.string().min(1, 'CNES obrigatorio').max(7, 'CNES invalido'),
+  competencia: z.string().regex(/^\d{4}-\d{2}$/, 'Competencia deve ser YYYY-MM'),
+  cbo: z.string().min(1, 'CBO obrigatorio').max(6, 'CBO invalido'),
+  procedimento: z.string().min(1, 'Procedimento obrigatorio').max(20),
+  quantidade: z.number().int().min(1, 'Quantidade minima: 1'),
+  cnpj_prestador: z.string().max(14).optional(),
+  patient_id: z.string().uuid('ID do paciente invalido').optional(),
+});
+
+export type SusBpaInput = z.infer<typeof susBpaSchema>;
+
+// ============================================
+// SUS AIH (API)
+// ============================================
+export const susAihSchema = z.object({
+  numero_aih: z.string().min(1, 'Numero AIH obrigatorio').max(13),
+  patient_id: z.string().uuid('ID do paciente invalido').optional(),
+  procedimento_principal: z.string().min(1, 'Procedimento principal obrigatorio').max(20),
+  procedimento_secundario: z.string().max(20).optional(),
+  data_internacao: z.string().min(1, 'Data de internacao obrigatoria'),
+  data_saida: z.string().optional(),
+  valor: z.number().min(0, 'Valor deve ser positivo'),
+  tipo_aih: z.enum(['1', '5'], { message: 'Tipo AIH invalido' }),
+  cnes: z.string().min(1, 'CNES obrigatorio').max(7),
+  cbo_medico: z.string().max(6).optional(),
+  diarias: z.number().int().min(0).default(0),
+});
