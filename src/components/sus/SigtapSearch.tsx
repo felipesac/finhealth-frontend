@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -24,7 +25,20 @@ interface SigtapResult {
   valor_hospitalar: number;
   complexidade?: string;
   modalidade?: string;
+  grupo?: string;
+  subgrupo?: string;
+  tipo?: string;
+  codigo_grupo?: string;
 }
+
+const tipoBadge: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+  consulta: 'default',
+  exame: 'secondary',
+  procedimento: 'outline',
+  cirurgia: 'destructive',
+  terapia: 'secondary',
+  medicamento: 'outline',
+};
 
 export function SigtapSearch() {
   const [query, setQuery] = useState('');
@@ -39,7 +53,7 @@ export function SigtapSearch() {
     setSearched(true);
 
     try {
-      const res = await fetch(`/api/sus/bpa?search_sigtap=${encodeURIComponent(query.trim())}`);
+      const res = await fetch(`/api/sus/sigtap?q=${encodeURIComponent(query.trim())}`);
       const data = await res.json();
 
       if (data.success && data.procedures) {
@@ -91,36 +105,53 @@ export function SigtapSearch() {
         )}
 
         {results.length > 0 && (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Codigo</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Competencia</TableHead>
-                  <TableHead className="text-right">Ambulatorial</TableHead>
-                  <TableHead className="text-right">Hospitalar</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {results.map((proc) => (
-                  <TableRow key={proc.id}>
-                    <TableCell className="font-mono text-sm">
-                      {proc.codigo_sigtap}
-                    </TableCell>
-                    <TableCell>{proc.nome}</TableCell>
-                    <TableCell>{proc.competencia}</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(proc.valor_ambulatorial)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(proc.valor_hospitalar)}
-                    </TableCell>
+          <>
+            <p className="text-sm text-muted-foreground">
+              {results.length} procedimento{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''}
+            </p>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Codigo</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Grupo</TableHead>
+                    <TableHead className="text-right">Ambulatorial</TableHead>
+                    <TableHead className="text-right">Hospitalar</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {results.map((proc) => (
+                    <TableRow key={proc.id}>
+                      <TableCell className="font-mono text-sm">
+                        {proc.codigo_sigtap}
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate" title={proc.nome}>
+                        {proc.nome}
+                      </TableCell>
+                      <TableCell>
+                        {proc.tipo && (
+                          <Badge variant={tipoBadge[proc.tipo] || 'secondary'}>
+                            {proc.tipo}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate" title={proc.grupo || ''}>
+                        {proc.grupo || '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(proc.valor_ambulatorial)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(proc.valor_hospitalar)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

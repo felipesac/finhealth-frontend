@@ -188,6 +188,9 @@ export interface DigitalCertificate {
 // SUS types
 export type SusStatus = 'rascunho' | 'validado' | 'enviado' | 'aprovado' | 'rejeitado';
 export type AihTipo = '1' | '5'; // 1=normal, 5=longa permanencia
+export type SusComplexidade = 'nao_se_aplica' | 'basica' | 'media' | 'alta';
+export type SusModalidade = 'ambulatorial' | 'hospitalar' | 'ambos';
+export type SusTipo = 'consulta' | 'exame' | 'procedimento' | 'terapia' | 'cirurgia' | 'medicamento';
 
 export interface SusProcedure {
   id: string;
@@ -196,8 +199,15 @@ export interface SusProcedure {
   competencia: string;
   valor_ambulatorial: number;
   valor_hospitalar: number;
-  complexidade?: string;
-  modalidade?: string;
+  complexidade?: SusComplexidade;
+  modalidade?: SusModalidade;
+  grupo?: string;
+  subgrupo?: string;
+  forma_organizacao?: string;
+  tipo?: SusTipo;
+  codigo_grupo?: string;
+  codigo_subgrupo?: string;
+  codigo_forma_organizacao?: string;
   created_at: string;
   updated_at: string;
 }
