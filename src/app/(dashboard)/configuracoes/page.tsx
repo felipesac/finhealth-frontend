@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -146,14 +147,44 @@ export default function ConfiguracoesPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Integracao TISS</CardTitle>
-            <CardDescription>
-              Configure a versao do padrao TISS utilizado
-            </CardDescription>
+            <CardTitle>Notificacoes</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Label>Versao do Padrao TISS</Label>
-            <p className="text-sm text-muted-foreground">3.05.00</p>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Notificacoes por email</p>
+                <p className="text-xs text-muted-foreground">Receba alertas por email</p>
+              </div>
+              <Badge variant="outline">Em breve</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Notificacoes push</p>
+                <p className="text-xs text-muted-foreground">Receba notificacoes push no navegador</p>
+              </div>
+              <Badge variant="outline">Em breve</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>TISS / SUS</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="tiss-version">Versao TISS</Label>
+                <Input id="tiss-version" defaultValue="3.05.00" disabled />
+                <p className="text-xs text-muted-foreground">Versao do padrao TISS em uso</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cnes">CNES Padrao</Label>
+                <Input id="cnes" placeholder="0000000" disabled />
+                <p className="text-xs text-muted-foreground">Codigo CNES do estabelecimento</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Configuracoes TISS/SUS serao editaveis em versoes futuras.</p>
           </CardContent>
         </Card>
 

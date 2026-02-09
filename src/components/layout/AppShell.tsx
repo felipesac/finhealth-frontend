@@ -8,6 +8,7 @@ import { Header } from './Header';
 import { useUIStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { MobileBottomNav } from './MobileBottomNav';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -115,7 +116,8 @@ export function AppShell({ children, userEmail }: AppShellProps) {
           userEmail={userEmail}
           onMobileMenuToggle={() => setMobileOpen(true)}
         />
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-auto p-4 pb-20 sm:p-6 sm:pb-6 md:pb-8 lg:p-8">{children}</main>
+        <MobileBottomNav />
       </div>
     </div>
   );

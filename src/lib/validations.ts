@@ -225,3 +225,31 @@ export const updatePaymentSchema = z.object({
 });
 
 export type UpdatePaymentInput = z.infer<typeof updatePaymentSchema>;
+
+// ============================================
+// Health Insurer CRUD (API)
+// ============================================
+export const createInsurerSchema = z.object({
+  ans_code: z.string().min(1, 'Codigo ANS obrigatorio').max(6),
+  name: z.string().min(1, 'Nome obrigatorio'),
+  cnpj: z.string().max(14).optional(),
+  tiss_version: z.string().default('3.05.00'),
+  contact_email: z.string().email().optional().or(z.literal('')),
+  active: z.boolean().default(true),
+});
+
+export type CreateInsurerInput = z.infer<typeof createInsurerSchema>;
+
+// ============================================
+// Patient CRUD (API)
+// ============================================
+export const createPatientSchema = z.object({
+  name: z.string().min(1, 'Nome obrigatorio'),
+  cpf: z.string().max(14).optional(),
+  birth_date: z.string().optional(),
+  gender: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')),
+});
+
+export type CreatePatientInput = z.infer<typeof createPatientSchema>;

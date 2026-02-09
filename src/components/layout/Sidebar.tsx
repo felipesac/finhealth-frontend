@@ -89,6 +89,9 @@ const navItems: NavItem[] = [
     icon: Users,
     subItems: [
       { href: '/admin/usuarios', label: 'Usuarios' },
+      { href: '/admin/auditoria', label: 'Auditoria' },
+      { href: '/admin/operadoras', label: 'Operadoras' },
+      { href: '/admin/pacientes', label: 'Pacientes' },
     ],
   },
   { href: '/configuracoes', label: 'Configuracoes', icon: Settings },
