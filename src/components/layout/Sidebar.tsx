@@ -53,7 +53,16 @@ const navItems: NavItem[] = [
       { href: '/pagamentos/conciliacao', label: 'Conciliacao' },
     ],
   },
-  { href: '/tiss', label: 'TISS', icon: Upload },
+  {
+    href: '/tiss',
+    label: 'TISS',
+    icon: Upload,
+    subItems: [
+      { href: '/tiss', label: 'Guias' },
+      { href: '/tiss/upload', label: 'Upload' },
+      { href: '/tiss/validacao', label: 'Validacao' },
+    ],
+  },
   {
     href: '/sus',
     label: 'SUS',
