@@ -44,7 +44,15 @@ const navItems: NavItem[] = [
       { href: '/glosas/faturamento', label: 'Faturamento' },
     ],
   },
-  { href: '/pagamentos', label: 'Pagamentos', icon: CreditCard },
+  {
+    href: '/pagamentos',
+    label: 'Pagamentos',
+    icon: CreditCard,
+    subItems: [
+      { href: '/pagamentos', label: 'Painel' },
+      { href: '/pagamentos/conciliacao', label: 'Conciliacao' },
+    ],
+  },
   { href: '/tiss', label: 'TISS', icon: Upload },
   {
     href: '/sus',
