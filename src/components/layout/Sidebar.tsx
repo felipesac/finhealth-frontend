@@ -60,6 +60,7 @@ const navItems: NavItem[] = [
     subItems: [
       { href: '/pagamentos', label: 'Painel' },
       { href: '/pagamentos/conciliacao', label: 'Conciliacao' },
+      { href: '/pagamentos/inadimplencia', label: 'Inadimplencia' },
     ],
   },
   {
@@ -70,6 +71,8 @@ const navItems: NavItem[] = [
       { href: '/tiss', label: 'Guias' },
       { href: '/tiss/upload', label: 'Upload' },
       { href: '/tiss/validacao', label: 'Validacao' },
+      { href: '/tiss/lotes', label: 'Lotes' },
+      { href: '/tiss/certificados', label: 'Certificados' },
     ],
   },
   {
@@ -80,6 +83,7 @@ const navItems: NavItem[] = [
       { href: '/sus/bpa', label: 'BPA' },
       { href: '/sus/aih', label: 'AIH' },
       { href: '/sus/sigtap', label: 'SIGTAP' },
+      { href: '/sus/remessa', label: 'Remessa' },
     ],
   },
   { href: '/relatorios', label: 'Relatorios', icon: BarChart3 },
@@ -94,7 +98,16 @@ const navItems: NavItem[] = [
       { href: '/admin/pacientes', label: 'Pacientes' },
     ],
   },
-  { href: '/configuracoes', label: 'Configuracoes', icon: Settings },
+  {
+    href: '/configuracoes',
+    label: 'Configuracoes',
+    icon: Settings,
+    subItems: [
+      { href: '/configuracoes', label: 'Geral' },
+      { href: '/configuracoes/usuarios', label: 'Usuarios' },
+      { href: '/configuracoes/operadoras', label: 'Operadoras' },
+    ],
+  },
 ];
 
 interface SidebarProps {
