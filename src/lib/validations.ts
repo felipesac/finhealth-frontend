@@ -253,3 +253,33 @@ export const createPatientSchema = z.object({
 });
 
 export type CreatePatientInput = z.infer<typeof createPatientSchema>;
+
+// ============================================
+// Procedure CRUD (API)
+// ============================================
+export const createProcedureSchema = z.object({
+  medical_account_id: z.string().uuid('ID da conta invalido'),
+  tuss_code: z.string().optional(),
+  description: z.string().trim().min(1, 'Descricao obrigatoria'),
+  quantity: z.number().int().min(1, 'Quantidade minima: 1'),
+  unit_price: z.number().min(0, 'Valor deve ser positivo'),
+  total_price: z.number().min(0, 'Valor deve ser positivo'),
+  performed_at: z.string().optional(),
+  professional_name: z.string().optional(),
+  status: z.string().default('pending'),
+});
+
+export type CreateProcedureInput = z.infer<typeof createProcedureSchema>;
+
+export const updateProcedureSchema = z.object({
+  tuss_code: z.string().optional().nullable(),
+  description: z.string().trim().min(1).optional(),
+  quantity: z.number().int().min(1).optional(),
+  unit_price: z.number().min(0).optional(),
+  total_price: z.number().min(0).optional(),
+  performed_at: z.string().optional().nullable(),
+  professional_name: z.string().optional().nullable(),
+  status: z.string().optional(),
+});
+
+export type UpdateProcedureInput = z.infer<typeof updateProcedureSchema>;

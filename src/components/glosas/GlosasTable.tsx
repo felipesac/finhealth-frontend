@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -12,10 +13,21 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
+import { BulkActions } from '@/components/ui/BulkActions';
 import { formatCurrency, formatDate } from '@/lib/formatters';
+import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown, AlertCircle } from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { Glosa, AppealStatus, GlosaType } from '@/types';
+
+const glosaStatusOptions = [
+  { value: 'pending', label: 'Pendente' },
+  { value: 'in_progress', label: 'Em Andamento' },
+  { value: 'sent', label: 'Enviado' },
+  { value: 'accepted', label: 'Aceito' },
+  { value: 'rejected', label: 'Rejeitado' },
+];
 
 interface GlosasTableProps {
   glosas: Glosa[];
@@ -40,6 +52,74 @@ type SortField = 'glosa_code' | 'glosa_type' | 'original_amount' | 'glosa_amount
 function GlosasTableInner({ glosas }: GlosasTableProps) {
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === sorted.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(sorted.map((g) => g.id)));
+    }
+  };
+
+  const handleBulkUpdateStatus = async (appeal_status: string) => {
+    setBulkLoading(true);
+    try {
+      const res = await fetch('/api/glosas/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds), action: 'update_status', appeal_status }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: `${json.count} glosa(s) atualizada(s)` });
+        setSelectedIds(new Set());
+        router.refresh();
+      } else {
+        toast({ title: json.error || 'Erro', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Erro na operacao em lote', variant: 'destructive' });
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Excluir ${selectedIds.size} glosa(s) selecionada(s)?`)) return;
+    setBulkLoading(true);
+    try {
+      const res = await fetch('/api/glosas/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds), action: 'delete' }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: `${json.count} glosa(s) excluida(s)` });
+        setSelectedIds(new Set());
+        router.refresh();
+      } else {
+        toast({ title: json.error || 'Erro', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Erro na operacao em lote', variant: 'destructive' });
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -100,11 +180,25 @@ function GlosasTableInner({ glosas }: GlosasTableProps) {
     return <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />;
   };
 
+  const isAllSelected = selectedIds.size === sorted.length && sorted.length > 0;
+
   return (
-    <div className="rounded-md border">
+    <div className="space-y-3">
+      <BulkActions
+        selectedCount={selectedIds.size}
+        onClearSelection={() => setSelectedIds(new Set())}
+        onBulkUpdateStatus={handleBulkUpdateStatus}
+        onBulkDelete={handleBulkDelete}
+        statusOptions={glosaStatusOptions}
+        loading={bulkLoading}
+      />
+      <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-10">
+              <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} />
+            </TableHead>
             <TableHead>
               <button
                 className="flex items-center gap-1 hover:text-foreground"
@@ -161,6 +255,9 @@ function GlosasTableInner({ glosas }: GlosasTableProps) {
             return (
               <TableRow key={glosa.id}>
                 <TableCell>
+                  <Checkbox checked={selectedIds.has(glosa.id)} onCheckedChange={() => toggleSelect(glosa.id)} />
+                </TableCell>
+                <TableCell>
                   <Link
                     href={`/glosas/${glosa.id}`}
                     className="font-medium text-primary hover:underline"
@@ -201,7 +298,7 @@ function GlosasTableInner({ glosas }: GlosasTableProps) {
           })}
           {glosas.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8}>
+              <TableCell colSpan={9}>
                 <EmptyState
                   icon={AlertCircle}
                   title="Nenhuma glosa encontrada"
@@ -212,6 +309,7 @@ function GlosasTableInner({ glosas }: GlosasTableProps) {
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

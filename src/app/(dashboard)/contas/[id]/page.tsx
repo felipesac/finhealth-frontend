@@ -10,18 +10,11 @@ export const metadata: Metadata = {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { StatusBadge } from '@/components/accounts';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { ArrowLeft, FileText } from 'lucide-react';
-import type { MedicalAccount, Procedure } from '@/types';
+import { ProcedureManagement } from '@/components/procedures/ProcedureManagement';
+import type { MedicalAccount } from '@/types';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -42,15 +35,8 @@ async function getAccountData(id: string) {
 
   if (!account) return null;
 
-  const { data: procedures } = await supabase
-    .from('procedures')
-    .select('*')
-    .eq('medical_account_id', id)
-    .order('created_at');
-
   return {
     account: account as MedicalAccount,
-    procedures: (procedures || []) as Procedure[],
   };
 }
 
@@ -62,7 +48,7 @@ export default async function ContaDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const { account, procedures } = data;
+  const { account } = data;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -171,38 +157,8 @@ export default async function ContaDetailPage({ params }: PageProps) {
       )}
 
       <Card>
-        <CardHeader>
-          <CardTitle>Procedimentos ({procedures.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Codigo TUSS</TableHead>
-                <TableHead>Descricao</TableHead>
-                <TableHead>Qtd</TableHead>
-                <TableHead>Valor Unit.</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {procedures.map((proc) => (
-                <TableRow key={proc.id}>
-                  <TableCell className="font-mono">{proc.tuss_code || '-'}</TableCell>
-                  <TableCell>{proc.description}</TableCell>
-                  <TableCell>{proc.quantity}</TableCell>
-                  <TableCell>{formatCurrency(proc.unit_price)}</TableCell>
-                  <TableCell>{formatCurrency(proc.total_price)}</TableCell>
-                  <TableCell>
-                    <Badge variant={proc.status === 'pending' ? 'secondary' : 'default'}>
-                      {proc.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="pt-6">
+          <ProcedureManagement accountId={id} />
         </CardContent>
       </Card>
     </div>

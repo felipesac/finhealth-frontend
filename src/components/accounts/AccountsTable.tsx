@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -10,11 +11,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { BulkActions } from '@/components/ui/BulkActions';
 import { StatusBadge } from './StatusBadge';
 import { formatCurrency, formatDate } from '@/lib/formatters';
+import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown, FileText } from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { MedicalAccount } from '@/types';
+
+const accountStatusOptions = [
+  { value: 'pending', label: 'Pendente' },
+  { value: 'validated', label: 'Validado' },
+  { value: 'sent', label: 'Enviado' },
+  { value: 'paid', label: 'Pago' },
+  { value: 'glosa', label: 'Glosado' },
+  { value: 'appeal', label: 'Em Recurso' },
+];
 
 interface AccountsTableProps {
   accounts: MedicalAccount[];
@@ -32,6 +45,74 @@ type SortField = 'account_number' | 'patient_name' | 'insurer_name' | 'total_amo
 function AccountsTableInner({ accounts }: AccountsTableProps) {
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === sorted.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(sorted.map((a) => a.id)));
+    }
+  };
+
+  const handleBulkUpdateStatus = async (status: string) => {
+    setBulkLoading(true);
+    try {
+      const res = await fetch('/api/accounts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds), action: 'update_status', status }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: `${json.count} conta(s) atualizada(s)` });
+        setSelectedIds(new Set());
+        router.refresh();
+      } else {
+        toast({ title: json.error || 'Erro', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Erro na operacao em lote', variant: 'destructive' });
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Excluir ${selectedIds.size} conta(s) selecionada(s)?`)) return;
+    setBulkLoading(true);
+    try {
+      const res = await fetch('/api/accounts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds), action: 'delete' }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: `${json.count} conta(s) excluida(s)` });
+        setSelectedIds(new Set());
+        router.refresh();
+      } else {
+        toast({ title: json.error || 'Erro', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Erro na operacao em lote', variant: 'destructive' });
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -96,11 +177,25 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
     return <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />;
   };
 
+  const isAllSelected = selectedIds.size === sorted.length && sorted.length > 0;
+
   return (
-    <div className="rounded-md border">
+    <div className="space-y-3">
+      <BulkActions
+        selectedCount={selectedIds.size}
+        onClearSelection={() => setSelectedIds(new Set())}
+        onBulkUpdateStatus={handleBulkUpdateStatus}
+        onBulkDelete={handleBulkDelete}
+        statusOptions={accountStatusOptions}
+        loading={bulkLoading}
+      />
+      <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-10">
+              <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} />
+            </TableHead>
             <TableHead>
               <button
                 className="flex items-center gap-1 hover:text-foreground"
@@ -163,6 +258,9 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
           {sorted.map((account) => (
             <TableRow key={account.id}>
               <TableCell>
+                <Checkbox checked={selectedIds.has(account.id)} onCheckedChange={() => toggleSelect(account.id)} />
+              </TableCell>
+              <TableCell>
                 <Link
                   href={`/contas/${account.id}`}
                   className="font-medium text-primary hover:underline"
@@ -187,7 +285,7 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
           ))}
           {accounts.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8}>
+              <TableCell colSpan={9}>
                 <EmptyState
                   icon={FileText}
                   title="Nenhuma conta encontrada"
@@ -200,6 +298,7 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
