@@ -33,7 +33,15 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/contas', label: 'Contas Medicas', icon: FileText },
+  {
+    href: '/contas',
+    label: 'Contas Medicas',
+    icon: FileText,
+    subItems: [
+      { href: '/contas', label: 'Listagem' },
+      { href: '/contas/nova', label: 'Nova Conta' },
+    ],
+  },
   {
     href: '/glosas',
     label: 'Glosas',

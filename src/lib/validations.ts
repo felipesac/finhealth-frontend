@@ -118,3 +118,22 @@ export const susAihSchema = z.object({
   cbo_medico: z.string().max(6).optional(),
   diarias: z.number().int().min(0).default(0),
 });
+
+export type SusAihInput = z.infer<typeof susAihSchema>;
+
+// ============================================
+// Medical Accounts (API)
+// ============================================
+export const createAccountSchema = z.object({
+  account_number: z.string().trim().min(1, 'Numero da conta obrigatorio'),
+  patient_id: z.string().uuid('ID do paciente invalido'),
+  health_insurer_id: z.string().uuid('ID da operadora invalido'),
+  account_type: z.enum(['internacao', 'ambulatorial', 'sadt', 'honorarios'], {
+    message: 'Tipo de conta invalido',
+  }),
+  admission_date: z.string().min(1, 'Data de admissao obrigatoria'),
+  discharge_date: z.string().optional(),
+  total_amount: z.number().min(0, 'Valor deve ser positivo'),
+});
+
+export type CreateAccountInput = z.infer<typeof createAccountSchema>;

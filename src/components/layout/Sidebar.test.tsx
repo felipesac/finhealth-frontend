@@ -50,8 +50,8 @@ describe('Sidebar', () => {
 
   it('non-active items do not have aria-current', () => {
     render(<Sidebar />);
-    const contasLink = screen.getByText('Contas Medicas').closest('a');
-    expect(contasLink).not.toHaveAttribute('aria-current');
+    const relatoriosLink = screen.getByText('Relatorios').closest('a');
+    expect(relatoriosLink).not.toHaveAttribute('aria-current');
   });
 
   it('renders toggle button with correct aria-label', () => {
@@ -75,7 +75,7 @@ describe('Sidebar', () => {
   it('calls onNavigate when a link is clicked', () => {
     const onNavigate = vi.fn();
     render(<Sidebar onNavigate={onNavigate} />);
-    fireEvent.click(screen.getByText('Contas Medicas'));
+    fireEvent.click(screen.getByText('Relatorios'));
     expect(onNavigate).toHaveBeenCalled();
   });
 });
