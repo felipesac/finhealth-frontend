@@ -16,6 +16,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://finhealth-frontend.vercel.app'),
   title: {
     default: 'FinHealth - Gestao Financeira de Saude',
     template: '%s | FinHealth',
