@@ -79,8 +79,63 @@ export default function ConfiguracoesPage() {
     }
   }, []);
 
-  const toggleNotifPref = (key: keyof NotificationPreferences) => {
-    const updated = { ...notifPrefs, [key]: !notifPrefs[key] };
+  const subscribePush = useCallback(async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) {
+        toast({ title: 'Push nao configurado no servidor', variant: 'destructive' });
+        return false;
+      }
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: vapidKey,
+      });
+      await fetch('/api/notifications/push-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription }),
+      });
+      return true;
+    } catch {
+      toast({ title: 'Erro ao ativar notificacoes push', description: 'Verifique as permissoes do navegador', variant: 'destructive' });
+      return false;
+    }
+  }, []);
+
+  const unsubscribePush = useCallback(async () => {
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = await registration?.pushManager.getSubscription();
+      if (subscription) await subscription.unsubscribe();
+      await fetch('/api/notifications/push-subscribe', { method: 'DELETE' });
+    } catch {
+      // silent
+    }
+  }, []);
+
+  const toggleNotifPref = async (key: keyof NotificationPreferences) => {
+    const newValue = !notifPrefs[key];
+
+    if (key === 'push_enabled') {
+      if (newValue) {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+          toast({ title: 'Seu navegador nao suporta notificacoes push', variant: 'destructive' });
+          return;
+        }
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          toast({ title: 'Permissao de notificacao negada', variant: 'destructive' });
+          return;
+        }
+        const subscribed = await subscribePush();
+        if (!subscribed) return;
+      } else {
+        await unsubscribePush();
+      }
+    }
+
+    const updated = { ...notifPrefs, [key]: newValue };
     setNotifPrefs(updated);
     handleSaveNotifications(updated);
   };
