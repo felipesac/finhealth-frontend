@@ -75,7 +75,7 @@ describe('Sidebar', () => {
   it('calls onNavigate when a link is clicked', () => {
     const onNavigate = vi.fn();
     render(<Sidebar onNavigate={onNavigate} />);
-    fireEvent.click(screen.getByText('Glosas'));
+    fireEvent.click(screen.getByText('Contas Medicas'));
     expect(onNavigate).toHaveBeenCalled();
   });
 });

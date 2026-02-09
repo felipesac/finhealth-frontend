@@ -34,7 +34,16 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/contas', label: 'Contas Medicas', icon: FileText },
-  { href: '/glosas', label: 'Glosas', icon: AlertCircle },
+  {
+    href: '/glosas',
+    label: 'Glosas',
+    icon: AlertCircle,
+    subItems: [
+      { href: '/glosas', label: 'Painel' },
+      { href: '/glosas/operadora', label: 'Por Operadora' },
+      { href: '/glosas/faturamento', label: 'Faturamento' },
+    ],
+  },
   { href: '/pagamentos', label: 'Pagamentos', icon: CreditCard },
   { href: '/tiss', label: 'TISS', icon: Upload },
   {
