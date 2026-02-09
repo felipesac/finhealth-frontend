@@ -18,6 +18,18 @@ export const metadata: Metadata = {
   description: 'Listagem de conciliacoes bancarias',
 };
 
+interface PaymentRow {
+  id: string;
+  payment_date: string;
+  payment_reference: string | null;
+  total_amount: number;
+  matched_amount: number;
+  unmatched_amount: number;
+  reconciliation_status: string;
+  reconciled_at: string | null;
+  health_insurer: { id: string; name: string } | null;
+}
+
 async function getReconciliationData() {
   const supabase = await createClient();
 
@@ -37,7 +49,7 @@ async function getReconciliationData() {
     .order('reconciliation_status', { ascending: true })
     .order('payment_date', { ascending: false });
 
-  const all = payments || [];
+  const all = (payments || []) as unknown as PaymentRow[];
 
   const totalAmount = all.reduce((s, p) => s + (p.total_amount || 0), 0);
   const totalMatched = all.reduce((s, p) => s + (p.matched_amount || 0), 0);
@@ -139,8 +151,7 @@ export default async function ConciliacaoPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                payments.map((payment: any) => (
+                payments.map((payment) => (
                   <TableRow key={payment.id}>
                     <TableCell>
                       {new Date(payment.payment_date).toLocaleDateString('pt-BR')}

@@ -34,6 +34,13 @@ async function getGlosasData() {
       )
     `);
 
+  interface GlosaWithInsurer {
+    glosa_amount: number;
+    glosa_type: string | null;
+    appeal_status: string | null;
+    medical_account: { health_insurer: { id: string; name: string } | null } | null;
+  }
+
   // Aggregate by insurer
   const insurerMap = new Map<
     string,
@@ -48,8 +55,7 @@ async function getGlosasData() {
     }
   >();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (glosas || []).forEach((glosa: any) => {
+  ((glosas || []) as unknown as GlosaWithInsurer[]).forEach((glosa) => {
     const insurerId = glosa.medical_account?.health_insurer?.id;
     const insurerName = glosa.medical_account?.health_insurer?.name;
 

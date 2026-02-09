@@ -40,7 +40,18 @@ const tipoLabels: Record<GlosaType, string> = {
   linear: 'Linear',
 };
 
-async function getGlosasFaturamento() {
+interface GlosaFaturamento {
+  id: string;
+  glosa_code: string;
+  glosa_type: string | null;
+  original_amount: number;
+  glosa_amount: number;
+  appeal_status: string | null;
+  created_at: string;
+  medical_account: { account_number: string } | null;
+}
+
+async function getGlosasFaturamento(): Promise<GlosaFaturamento[]> {
   const supabase = await createClient();
 
   const { data: glosas } = await supabase
@@ -58,7 +69,7 @@ async function getGlosasFaturamento() {
     .order('created_at', { ascending: false })
     .limit(100);
 
-  return glosas || [];
+  return (glosas || []) as unknown as GlosaFaturamento[];
 }
 
 export default async function GlosasFaturamentoPage() {
@@ -156,8 +167,7 @@ export default async function GlosasFaturamentoPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                glosas.map((glosa: any) => (
+                glosas.map((glosa) => (
                   <TableRow key={glosa.id}>
                     <TableCell className="font-medium">
                       {glosa.medical_account?.account_number || '-'}

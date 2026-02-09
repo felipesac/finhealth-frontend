@@ -24,6 +24,16 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   pending: { label: 'Pendente', variant: 'secondary' },
 };
 
+interface TissValidationRow {
+  id: string;
+  tiss_guide_number: string | null;
+  tiss_guide_type: string | null;
+  account_number: string;
+  tiss_validation_status: string | null;
+  tiss_validation_errors: unknown;
+  created_at: string;
+}
+
 async function getValidationData() {
   const supabase = await createClient();
 
@@ -33,7 +43,7 @@ async function getValidationData() {
     .not('tiss_guide_number', 'is', null)
     .order('created_at', { ascending: false });
 
-  const all = accounts || [];
+  const all = (accounts || []) as unknown as TissValidationRow[];
 
   const countValid = all.filter((a) => a.tiss_validation_status === 'valid').length;
   const countInvalid = all.filter((a) => a.tiss_validation_status === 'invalid').length;
@@ -137,8 +147,7 @@ export default async function TissValidacaoPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                accounts.map((account: any) => {
+                accounts.map((account) => {
                   const status = account.tiss_validation_status || 'pending';
                   const config = statusConfig[status] || statusConfig.pending;
                   const errorCount = getErrorCount(account.tiss_validation_errors);

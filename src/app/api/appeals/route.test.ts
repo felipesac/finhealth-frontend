@@ -96,10 +96,6 @@ describe('PATCH /api/appeals', () => {
 
   it('returns 500 on database error', async () => {
     allowRate(); allowAuth();
-    const chain = mockChain({ data: null, error: { message: 'DB fail' } });
-    // Make the update().eq() throw via the thenable resolving with an error
-    // The route does: const { error } = await supabase.from(...).update(...).eq(...)
-    // When error is truthy, it throws
     (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       mockSupa({ data: null, error: { message: 'DB fail' } }),
     );

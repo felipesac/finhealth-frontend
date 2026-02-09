@@ -40,15 +40,21 @@ async function getProductionData() {
       health_insurer:health_insurers(id, name)
     `);
 
-  const all = accounts || [];
+  interface AccountWithInsurer {
+    account_type: string | null;
+    total_amount: number;
+    approved_amount: number;
+    paid_amount: number;
+    health_insurer: { id: string; name: string } | null;
+  }
+
+  const all = (accounts || []) as unknown as AccountWithInsurer[];
 
   // Aggregate by type
   const typeMap = new Map<string, { count: number; total: number; approved: number; paid: number }>();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const insurerMap = new Map<string, { name: string; count: number; total: number; paid: number }>();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  all.forEach((account: any) => {
+  all.forEach((account) => {
     const type = account.account_type || 'outros';
     if (!typeMap.has(type)) {
       typeMap.set(type, { count: 0, total: 0, approved: 0, paid: 0 });
