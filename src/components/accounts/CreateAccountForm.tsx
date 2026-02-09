@@ -14,6 +14,15 @@ interface CreateAccountFormProps {
   insurers: { id: string; name: string }[];
 }
 
+interface FieldErrors {
+  account_number?: string;
+  patient_id?: string;
+  health_insurer_id?: string;
+  admission_date?: string;
+  total_amount?: string;
+  discharge_date?: string;
+}
+
 const accountTypeOptions = [
   { value: 'internacao', label: 'Internacao' },
   { value: 'ambulatorial', label: 'Ambulatorial' },
@@ -24,6 +33,7 @@ const accountTypeOptions = [
 export function CreateAccountForm({ patients, insurers }: CreateAccountFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   const [accountNumber, setAccountNumber] = useState('');
   const [patientId, setPatientId] = useState('');
@@ -33,8 +43,35 @@ export function CreateAccountForm({ patients, insurers }: CreateAccountFormProps
   const [dischargeDate, setDischargeDate] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
 
+  const validate = (): boolean => {
+    const newErrors: FieldErrors = {};
+
+    if (!accountNumber.trim()) {
+      newErrors.account_number = 'Numero da conta obrigatorio';
+    }
+    if (!patientId) {
+      newErrors.patient_id = 'Selecione um paciente';
+    }
+    if (!healthInsurerId) {
+      newErrors.health_insurer_id = 'Selecione uma operadora';
+    }
+    if (!admissionDate) {
+      newErrors.admission_date = 'Data de admissao obrigatoria';
+    }
+    if (totalAmount < 0) {
+      newErrors.total_amount = 'Valor deve ser positivo';
+    }
+    if (dischargeDate && admissionDate && dischargeDate < admissionDate) {
+      newErrors.discharge_date = 'Data de alta deve ser posterior a admissao';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     setSaving(true);
 
     try {
@@ -83,10 +120,11 @@ export function CreateAccountForm({ patients, insurers }: CreateAccountFormProps
               <Input
                 id="account_number"
                 value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
+                onChange={(e) => { setAccountNumber(e.target.value); setErrors((prev) => ({ ...prev, account_number: undefined })); }}
                 placeholder="Ex: 2024001"
-                required
+                aria-invalid={!!errors.account_number}
               />
+              {errors.account_number && <p className="text-xs text-destructive">{errors.account_number}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="account_type">Tipo</Label>
@@ -95,7 +133,6 @@ export function CreateAccountForm({ patients, insurers }: CreateAccountFormProps
                 value={accountType}
                 onChange={(e) => setAccountType(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                required
               >
                 {accountTypeOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -109,9 +146,8 @@ export function CreateAccountForm({ patients, insurers }: CreateAccountFormProps
               <select
                 id="patient_id"
                 value={patientId}
-                onChange={(e) => setPatientId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                required
+                onChange={(e) => { setPatientId(e.target.value); setErrors((prev) => ({ ...prev, patient_id: undefined })); }}
+                className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${errors.patient_id ? 'border-destructive' : 'border-input'}`}
               >
                 <option value="">Selecione um paciente</option>
                 {patients.map((p) => (
@@ -120,15 +156,15 @@ export function CreateAccountForm({ patients, insurers }: CreateAccountFormProps
                   </option>
                 ))}
               </select>
+              {errors.patient_id && <p className="text-xs text-destructive">{errors.patient_id}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="health_insurer_id">Operadora</Label>
               <select
                 id="health_insurer_id"
                 value={healthInsurerId}
-                onChange={(e) => setHealthInsurerId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                required
+                onChange={(e) => { setHealthInsurerId(e.target.value); setErrors((prev) => ({ ...prev, health_insurer_id: undefined })); }}
+                className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${errors.health_insurer_id ? 'border-destructive' : 'border-input'}`}
               >
                 <option value="">Selecione uma operadora</option>
                 {insurers.map((ins) => (
@@ -137,6 +173,7 @@ export function CreateAccountForm({ patients, insurers }: CreateAccountFormProps
                   </option>
                 ))}
               </select>
+              {errors.health_insurer_id && <p className="text-xs text-destructive">{errors.health_insurer_id}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="admission_date">Data de Admissao</Label>
@@ -144,9 +181,10 @@ export function CreateAccountForm({ patients, insurers }: CreateAccountFormProps
                 id="admission_date"
                 type="date"
                 value={admissionDate}
-                onChange={(e) => setAdmissionDate(e.target.value)}
-                required
+                onChange={(e) => { setAdmissionDate(e.target.value); setErrors((prev) => ({ ...prev, admission_date: undefined })); }}
+                aria-invalid={!!errors.admission_date}
               />
+              {errors.admission_date && <p className="text-xs text-destructive">{errors.admission_date}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="discharge_date">Data de Alta</Label>
@@ -154,8 +192,10 @@ export function CreateAccountForm({ patients, insurers }: CreateAccountFormProps
                 id="discharge_date"
                 type="date"
                 value={dischargeDate}
-                onChange={(e) => setDischargeDate(e.target.value)}
+                onChange={(e) => { setDischargeDate(e.target.value); setErrors((prev) => ({ ...prev, discharge_date: undefined })); }}
+                aria-invalid={!!errors.discharge_date}
               />
+              {errors.discharge_date && <p className="text-xs text-destructive">{errors.discharge_date}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="total_amount">Valor Total (R$)</Label>
@@ -163,11 +203,12 @@ export function CreateAccountForm({ patients, insurers }: CreateAccountFormProps
                 id="total_amount"
                 type="number"
                 value={totalAmount}
-                onChange={(e) => setTotalAmount(parseFloat(e.target.value) || 0)}
+                onChange={(e) => { setTotalAmount(parseFloat(e.target.value) || 0); setErrors((prev) => ({ ...prev, total_amount: undefined })); }}
                 min={0}
                 step={0.01}
-                required
+                aria-invalid={!!errors.total_amount}
               />
+              {errors.total_amount && <p className="text-xs text-destructive">{errors.total_amount}</p>}
             </div>
           </div>
 
