@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { MetricsGrid, GlosasChart, RecentAccounts } from '@/components/dashboard';
+import { RealtimeDashboard } from '@/components/dashboard/RealtimeDashboard';
 import type { DashboardMetrics, MedicalAccount } from '@/types';
 
 export const metadata: Metadata = {
@@ -79,20 +80,22 @@ export default async function DashboardPage() {
   const { metrics, recentAccounts } = await getDashboardData();
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Visao geral do faturamento hospitalar
-        </p>
-      </div>
+    <RealtimeDashboard>
+      <div className="space-y-6 sm:space-y-8">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dashboard</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Visao geral do faturamento hospitalar
+          </p>
+        </div>
 
-      <MetricsGrid metrics={metrics} />
+        <MetricsGrid metrics={metrics} />
 
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-        <GlosasChart data={metrics.glosasBreakdown} />
-        <RecentAccounts accounts={recentAccounts} />
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          <GlosasChart data={metrics.glosasBreakdown} />
+          <RecentAccounts accounts={recentAccounts} />
+        </div>
       </div>
-    </div>
+    </RealtimeDashboard>
   );
 }

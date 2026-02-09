@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   Building2,
   ChevronDown,
+  Users,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
@@ -82,6 +83,14 @@ const navItems: NavItem[] = [
     ],
   },
   { href: '/relatorios', label: 'Relatorios', icon: BarChart3 },
+  {
+    href: '/admin',
+    label: 'Admin',
+    icon: Users,
+    subItems: [
+      { href: '/admin/usuarios', label: 'Usuarios' },
+    ],
+  },
   { href: '/configuracoes', label: 'Configuracoes', icon: Settings },
 ];
 

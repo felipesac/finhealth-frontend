@@ -137,3 +137,91 @@ export const createAccountSchema = z.object({
 });
 
 export type CreateAccountInput = z.infer<typeof createAccountSchema>;
+
+// ============================================
+// User Management (API)
+// ============================================
+export const inviteUserSchema = z.object({
+  email: z.string().email('Email invalido'),
+  role: z.enum(['admin', 'finance_manager', 'auditor', 'tiss_operator'], {
+    message: 'Role invalida',
+  }),
+  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+});
+
+export type InviteUserInput = z.infer<typeof inviteUserSchema>;
+
+export const updateUserRoleSchema = z.object({
+  role: z.enum(['admin', 'finance_manager', 'auditor', 'tiss_operator'], {
+    message: 'Role invalida',
+  }),
+});
+
+export type UpdateUserRoleInput = z.infer<typeof updateUserRoleSchema>;
+
+// ============================================
+// Account Update (API)
+// ============================================
+export const updateAccountSchema = z.object({
+  account_number: z.string().trim().min(1).optional(),
+  patient_id: z.string().uuid().optional(),
+  health_insurer_id: z.string().uuid().optional(),
+  account_type: z.enum(['internacao', 'ambulatorial', 'sadt', 'honorarios']).optional(),
+  admission_date: z.string().optional(),
+  discharge_date: z.string().optional().nullable(),
+  total_amount: z.number().min(0).optional(),
+  status: z.enum(['pending', 'validated', 'sent', 'paid', 'glosa', 'appeal']).optional(),
+});
+
+export type UpdateAccountInput = z.infer<typeof updateAccountSchema>;
+
+// ============================================
+// Glosa CRUD (API)
+// ============================================
+export const createGlosaSchema = z.object({
+  medical_account_id: z.string().uuid('ID da conta invalido'),
+  procedure_id: z.string().uuid('ID do procedimento invalido').optional(),
+  glosa_code: z.string().trim().min(1, 'Codigo da glosa obrigatorio'),
+  glosa_description: z.string().optional(),
+  glosa_type: z.enum(['administrativa', 'tecnica', 'linear'], {
+    message: 'Tipo de glosa invalido',
+  }),
+  original_amount: z.number().min(0, 'Valor deve ser positivo'),
+  glosa_amount: z.number().min(0, 'Valor deve ser positivo'),
+});
+
+export type CreateGlosaInput = z.infer<typeof createGlosaSchema>;
+
+export const updateGlosaSchema = z.object({
+  glosa_code: z.string().trim().min(1).optional(),
+  glosa_description: z.string().optional().nullable(),
+  glosa_type: z.enum(['administrativa', 'tecnica', 'linear']).optional(),
+  original_amount: z.number().min(0).optional(),
+  glosa_amount: z.number().min(0).optional(),
+  appeal_status: z.enum(['pending', 'in_progress', 'sent', 'accepted', 'rejected']).optional(),
+});
+
+export type UpdateGlosaInput = z.infer<typeof updateGlosaSchema>;
+
+// ============================================
+// Payment CRUD (API)
+// ============================================
+export const createPaymentSchema = z.object({
+  health_insurer_id: z.string().uuid('ID da operadora invalido'),
+  payment_date: z.string().min(1, 'Data do pagamento obrigatoria'),
+  payment_reference: z.string().optional(),
+  bank_account: z.string().optional(),
+  total_amount: z.number().min(0, 'Valor deve ser positivo'),
+});
+
+export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
+
+export const updatePaymentSchema = z.object({
+  payment_date: z.string().optional(),
+  payment_reference: z.string().optional().nullable(),
+  bank_account: z.string().optional().nullable(),
+  total_amount: z.number().min(0).optional(),
+  reconciliation_status: z.enum(['pending', 'partial', 'matched']).optional(),
+});
+
+export type UpdatePaymentInput = z.infer<typeof updatePaymentSchema>;

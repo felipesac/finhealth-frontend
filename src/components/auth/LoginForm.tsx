@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -95,6 +96,11 @@ export function LoginForm() {
             {fieldErrors.password && (
               <p className="text-xs text-destructive" role="alert">{fieldErrors.password}</p>
             )}
+            <div className="text-right">
+              <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary">
+                Esqueceu a senha?
+              </Link>
+            </div>
           </div>
           {error && (
             <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert" aria-live="polite">
