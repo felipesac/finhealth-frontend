@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PaymentsTable } from '@/components/payments/PaymentsTable';
+import { PaymentFilters } from '@/components/payments/PaymentFilters';
+import { PaymentUpload } from '@/components/payments/PaymentUpload';
 import { Pagination } from '@/components/ui/pagination';
 import { formatCurrency } from '@/lib/formatters';
-import type { Payment } from '@/types';
+import type { Payment, HealthInsurer } from '@/types';
 
 export const metadata: Metadata = {
   title: 'Pagamentos | FinHealth',
@@ -14,21 +16,34 @@ export const metadata: Metadata = {
 const PAGE_SIZE = 25;
 
 interface PageProps {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; search?: string; status?: string; insurerId?: string }>;
 }
 
-async function getPaymentsData(page: number) {
+async function getPaymentsData(page: number, search: string, status: string, insurerId: string) {
   const supabase = await createClient();
   const from = (page - 1) * PAGE_SIZE;
 
-  const { data: payments, count } = await supabase
+  let query = supabase
     .from('payments')
     .select(`
       *,
       health_insurer:health_insurers(id, name)
     `, { count: 'exact' })
-    .order('payment_date', { ascending: false })
-    .range(from, from + PAGE_SIZE - 1);
+    .order('payment_date', { ascending: false });
+
+  if (search) {
+    query = query.ilike('payment_reference', `%${search}%`);
+  }
+
+  if (status && status !== 'all') {
+    query = query.eq('reconciliation_status', status);
+  }
+
+  if (insurerId && insurerId !== 'all') {
+    query = query.eq('health_insurer_id', insurerId);
+  }
+
+  const { data: payments, count } = await query.range(from, from + PAGE_SIZE - 1);
 
   // Metrics from all payments (not paginated)
   const { data: allPayments } = await supabase
@@ -49,9 +64,19 @@ async function getPaymentsData(page: number) {
 }
 
 export default async function PagamentosPage({ searchParams }: PageProps) {
-  const { page: pageStr } = await searchParams;
-  const page = Math.max(1, parseInt(pageStr || '1', 10));
-  const { payments, total, metrics } = await getPaymentsData(page);
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || '1', 10));
+  const search = params.search || '';
+  const status = params.status || 'all';
+  const insurerId = params.insurerId || 'all';
+  const { payments, total, metrics } = await getPaymentsData(page, search, status, insurerId);
+
+  const supabase = await createClient();
+  const { data: insurersList } = await supabase
+    .from('health_insurers')
+    .select('id, ans_code, name, cnpj, tiss_version, contact_email, api_endpoint, config, active, created_at, updated_at')
+    .eq('active', true)
+    .order('name');
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -61,6 +86,8 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
           Gestao de pagamentos recebidos e conciliacao bancaria
         </p>
       </div>
+
+      <PaymentFilters insurers={(insurersList || []) as HealthInsurer[]} />
 
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         <Card>
@@ -97,6 +124,8 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
           </CardContent>
         </Card>
       </div>
+
+      <PaymentUpload insurers={(insurersList || []) as { id: string; name: string }[]} />
 
       <PaymentsTable payments={payments} />
       <Pagination total={total} pageSize={PAGE_SIZE} currentPage={page} />

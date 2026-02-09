@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GlosasTable } from '@/components/glosas';
+import { GlosaFilters } from '@/components/glosas/GlosaFilters';
 import { Pagination } from '@/components/ui/pagination';
 import type { Glosa } from '@/types';
 
@@ -13,10 +14,10 @@ export const metadata: Metadata = {
 const PAGE_SIZE = 25;
 
 interface PageProps {
-  searchParams: Promise<{ page?: string; tab?: string }>;
+  searchParams: Promise<{ page?: string; tab?: string; search?: string; glosaType?: string }>;
 }
 
-async function getGlosasData(page: number, tab: string) {
+async function getGlosasData(page: number, tab: string, search: string, glosaType: string) {
   const supabase = await createClient();
   const from = (page - 1) * PAGE_SIZE;
 
@@ -35,6 +36,14 @@ async function getGlosasData(page: number, tab: string) {
     query = query.in('appeal_status', ['in_progress', 'sent']);
   } else if (tab === 'resolved') {
     query = query.in('appeal_status', ['accepted', 'rejected']);
+  }
+
+  if (search) {
+    query = query.ilike('glosa_code', `%${search}%`);
+  }
+
+  if (glosaType && glosaType !== 'all') {
+    query = query.eq('glosa_type', glosaType);
   }
 
   const { data: glosas, count } = await query.range(from, from + PAGE_SIZE - 1);
@@ -63,7 +72,9 @@ export default async function GlosasPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || '1', 10));
   const tab = params.tab || 'pending';
-  const { glosas, total, counts } = await getGlosasData(page, tab);
+  const search = params.search || '';
+  const glosaType = params.glosaType || 'all';
+  const { glosas, total, counts } = await getGlosasData(page, tab, search, glosaType);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -73,6 +84,8 @@ export default async function GlosasPage({ searchParams }: PageProps) {
           Gerencie as glosas e recursos
         </p>
       </div>
+
+      <GlosaFilters />
 
       <Tabs defaultValue={tab} className="space-y-4">
         <TabsList>
