@@ -13,8 +13,8 @@ export default function Loading() {
           <Skeleton className="h-5 w-40" />
         </CardHeader>
         <CardContent className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full" />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
           ))}
         </CardContent>
       </Card>
