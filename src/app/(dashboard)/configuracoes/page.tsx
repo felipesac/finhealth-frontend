@@ -26,6 +26,9 @@ export default function ConfiguracoesPage() {
   const [newPassword, setNewPassword] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [tissVersion, setTissVersion] = useState('3.05.00');
+  const [cnes, setCnes] = useState('');
+  const [savingTiss, setSavingTiss] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>({
     email_glosas: true,
     email_pagamentos: true,
@@ -46,6 +49,15 @@ export default function ConfiguracoesPage() {
       .then((r) => r.json())
       .then((res) => {
         if (res.data) setNotifPrefs(res.data);
+      })
+      .catch(() => {});
+    fetch('/api/settings/tiss')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.data) {
+          setTissVersion(res.data.tiss_version || '3.05.00');
+          setCnes(res.data.cnes || '');
+        }
       })
       .catch(() => {});
   }, []);
@@ -71,6 +83,27 @@ export default function ConfiguracoesPage() {
     const updated = { ...notifPrefs, [key]: !notifPrefs[key] };
     setNotifPrefs(updated);
     handleSaveNotifications(updated);
+  };
+
+  const handleSaveTiss = async () => {
+    if (cnes && !/^\d{7}$/.test(cnes)) {
+      toast({ title: 'CNES deve ter 7 digitos numericos', variant: 'destructive' });
+      return;
+    }
+    setSavingTiss(true);
+    try {
+      const res = await fetch('/api/settings/tiss', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tiss_version: tissVersion, cnes }),
+      });
+      if (!res.ok) throw new Error('Erro ao salvar');
+      toast({ title: 'Configuracoes TISS/SUS atualizadas' });
+    } catch {
+      toast({ title: 'Erro ao salvar configuracoes TISS', variant: 'destructive' });
+    } finally {
+      setSavingTiss(false);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -250,21 +283,38 @@ export default function ConfiguracoesPage() {
         <Card>
           <CardHeader>
             <CardTitle>TISS / SUS</CardTitle>
+            <CardDescription>
+              Configuracoes do padrao TISS e identificacao SUS
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="tiss-version">Versao TISS</Label>
-                <Input id="tiss-version" defaultValue="3.05.00" disabled />
-                <p className="text-xs text-muted-foreground">Versao do padrao TISS em uso</p>
+                <Input
+                  id="tiss-version"
+                  value={tissVersion}
+                  onChange={(e) => setTissVersion(e.target.value)}
+                  placeholder="3.05.00"
+                />
+                <p className="text-xs text-muted-foreground">Versao do padrao TISS em uso (ex: 3.05.00, 4.00.00)</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cnes">CNES Padrao</Label>
-                <Input id="cnes" placeholder="0000000" disabled />
-                <p className="text-xs text-muted-foreground">Codigo CNES do estabelecimento</p>
+                <Input
+                  id="cnes"
+                  value={cnes}
+                  onChange={(e) => setCnes(e.target.value)}
+                  placeholder="0000000"
+                  maxLength={7}
+                />
+                <p className="text-xs text-muted-foreground">Codigo CNES do estabelecimento (7 digitos)</p>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Configuracoes TISS/SUS serao editaveis em versoes futuras.</p>
+            <Button onClick={handleSaveTiss} disabled={savingTiss}>
+              {savingTiss && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar Configuracoes TISS
+            </Button>
           </CardContent>
         </Card>
 

@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatCurrency, formatDate } from '@/lib/formatters';
+import { InadimplenciaActions } from '@/components/payments/InadimplenciaActions';
 
 export const metadata: Metadata = {
   title: 'Inadimplencia | FinHealth',
@@ -149,12 +150,13 @@ export default async function InadimplenciaPage() {
                 <TableHead className="text-right">Pendente</TableHead>
                 <TableHead>Atraso</TableHead>
                 <TableHead>Data</TableHead>
+                <TableHead className="text-right">Acoes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {accounts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     Nenhuma conta inadimplente encontrada
                   </TableCell>
                 </TableRow>
@@ -174,6 +176,13 @@ export default async function InadimplenciaPage() {
                         <Badge variant={getUrgencyVariant(days)}>{days} dias</Badge>
                       </TableCell>
                       <TableCell>{formatDate(account.created_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <InadimplenciaActions
+                          accountId={account.id}
+                          accountNumber={account.account_number}
+                          currentStatus={account.status}
+                        />
+                      </TableCell>
                     </TableRow>
                   );
                 })
