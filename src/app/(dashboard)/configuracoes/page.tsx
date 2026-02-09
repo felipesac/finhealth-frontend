@@ -1,16 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import { CertificateUpload } from '@/components/certificates/CertificateUpload';
+
+interface NotificationPreferences {
+  email_glosas: boolean;
+  email_pagamentos: boolean;
+  email_contas: boolean;
+  push_enabled: boolean;
+}
 
 export default function ConfiguracoesPage() {
   const [name, setName] = useState('');
@@ -19,6 +26,13 @@ export default function ConfiguracoesPage() {
   const [newPassword, setNewPassword] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>({
+    email_glosas: true,
+    email_pagamentos: true,
+    email_contas: false,
+    push_enabled: false,
+  });
+  const [savingNotif, setSavingNotif] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -28,7 +42,36 @@ export default function ConfiguracoesPage() {
         setName(data.user.user_metadata?.name || '');
       }
     });
+    fetch('/api/notifications/preferences')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.data) setNotifPrefs(res.data);
+      })
+      .catch(() => {});
   }, []);
+
+  const handleSaveNotifications = useCallback(async (prefs: NotificationPreferences) => {
+    setSavingNotif(true);
+    try {
+      const res = await fetch('/api/notifications/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(prefs),
+      });
+      if (!res.ok) throw new Error('Erro ao salvar');
+      toast({ title: 'Preferencias de notificacao atualizadas' });
+    } catch {
+      toast({ title: 'Erro ao salvar notificacoes', variant: 'destructive' });
+    } finally {
+      setSavingNotif(false);
+    }
+  }, []);
+
+  const toggleNotifPref = (key: keyof NotificationPreferences) => {
+    const updated = { ...notifPrefs, [key]: !notifPrefs[key] };
+    setNotifPrefs(updated);
+    handleSaveNotifications(updated);
+  };
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
@@ -148,21 +191,58 @@ export default function ConfiguracoesPage() {
         <Card>
           <CardHeader>
             <CardTitle>Notificacoes</CardTitle>
+            <CardDescription>
+              Configure quais notificacoes deseja receber
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Notificacoes por email</p>
-                <p className="text-xs text-muted-foreground">Receba alertas por email</p>
+                <Label htmlFor="notif-glosas" className="text-sm font-medium">Glosas</Label>
+                <p className="text-xs text-muted-foreground">Alertas sobre novas glosas e recursos</p>
               </div>
-              <Badge variant="outline">Em breve</Badge>
+              <Switch
+                id="notif-glosas"
+                checked={notifPrefs.email_glosas}
+                onCheckedChange={() => toggleNotifPref('email_glosas')}
+                disabled={savingNotif}
+              />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Notificacoes push</p>
-                <p className="text-xs text-muted-foreground">Receba notificacoes push no navegador</p>
+                <Label htmlFor="notif-pagamentos" className="text-sm font-medium">Pagamentos</Label>
+                <p className="text-xs text-muted-foreground">Alertas sobre pagamentos recebidos e conciliacao</p>
               </div>
-              <Badge variant="outline">Em breve</Badge>
+              <Switch
+                id="notif-pagamentos"
+                checked={notifPrefs.email_pagamentos}
+                onCheckedChange={() => toggleNotifPref('email_pagamentos')}
+                disabled={savingNotif}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="notif-contas" className="text-sm font-medium">Contas Medicas</Label>
+                <p className="text-xs text-muted-foreground">Alertas sobre mudancas de status nas contas</p>
+              </div>
+              <Switch
+                id="notif-contas"
+                checked={notifPrefs.email_contas}
+                onCheckedChange={() => toggleNotifPref('email_contas')}
+                disabled={savingNotif}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="notif-push" className="text-sm font-medium">Notificacoes push</Label>
+                <p className="text-xs text-muted-foreground">Receba notificacoes em tempo real no navegador</p>
+              </div>
+              <Switch
+                id="notif-push"
+                checked={notifPrefs.push_enabled}
+                onCheckedChange={() => toggleNotifPref('push_enabled')}
+                disabled={savingNotif}
+              />
             </div>
           </CardContent>
         </Card>
