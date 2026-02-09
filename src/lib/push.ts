@@ -1,11 +1,17 @@
 import webpush from 'web-push';
 
-if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+let vapidConfigured = false;
+
+function ensureVapid() {
+  if (vapidConfigured) return true;
+  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return false;
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT || 'mailto:noreply@finhealth.com.br',
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   );
+  vapidConfigured = true;
+  return true;
 }
 
 export interface PushSubscriptionData {
@@ -20,7 +26,7 @@ export async function sendPushNotification(
   subscription: PushSubscriptionData,
   payload: { title: string; body: string; url?: string }
 ) {
-  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+  if (!ensureVapid()) {
     console.warn('[push] VAPID keys not configured, skipping push');
     return { success: false, error: 'VAPID keys not configured' };
   }

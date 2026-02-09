@@ -1,6 +1,12 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+
+function getResend(): Resend | null {
+  if (!process.env.RESEND_API_KEY) return null;
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'FinHealth <noreply@finhealth.com.br>';
 
@@ -59,7 +65,8 @@ const templates: Record<EmailType, (data: Record<string, string | number>) => st
 };
 
 export async function sendNotificationEmail({ to, type, subject, data }: SendEmailParams) {
-  if (!process.env.RESEND_API_KEY) {
+  const resend = getResend();
+  if (!resend) {
     console.warn('[email] RESEND_API_KEY not configured, skipping email');
     return { success: false, error: 'RESEND_API_KEY not configured' };
   }
