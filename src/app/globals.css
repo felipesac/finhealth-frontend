@@ -85,3 +85,66 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* Print styles */
+@media print {
+  /* Hide non-essential UI */
+  nav,
+  aside,
+  footer,
+  button,
+  .no-print,
+  [role="navigation"],
+  [aria-label="Navegacao principal"],
+  [aria-label="Breadcrumb"] {
+    display: none !important;
+  }
+
+  /* Reset layout */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure content is readable */
+  body {
+    font-size: 12pt;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  /* Page breaks */
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
+
+  /* Show links */
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  a[href^="/"]::after,
+  a[href^="#"]::after {
+    content: none;
+  }
+
+  /* Cards look clean */
+  .border {
+    border-color: #ccc !important;
+  }
+
+  /* Remove shadows */
+  * {
+    box-shadow: none !important;
+  }
+}

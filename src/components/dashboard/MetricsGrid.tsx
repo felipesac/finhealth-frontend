@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/formatters';
 import {
@@ -15,7 +16,7 @@ interface MetricsGridProps {
   metrics: DashboardMetrics;
 }
 
-export function MetricsGrid({ metrics }: MetricsGridProps) {
+function MetricsGridInner({ metrics }: MetricsGridProps) {
   const cards = [
     {
       title: 'Faturamento Total',
@@ -81,3 +82,5 @@ export function MetricsGrid({ metrics }: MetricsGridProps) {
     </div>
   );
 }
+
+export const MetricsGrid = React.memo(MetricsGridInner);

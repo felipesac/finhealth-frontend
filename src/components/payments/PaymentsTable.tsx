@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Table,
@@ -21,17 +21,31 @@ import {
 import { Button } from '@/components/ui/button';
 import { ReconciliationBadge } from './ReconciliationBadge';
 import { formatCurrency, formatDate } from '@/lib/formatters';
-import { Search, X } from 'lucide-react';
+import { Search, X, ArrowUpDown, ArrowUp, ArrowDown, CreditCard } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { Payment } from '@/types';
 
 interface PaymentsTableProps {
   payments: Payment[];
 }
 
-export function PaymentsTable({ payments }: PaymentsTableProps) {
+type SortField = 'payment_date' | 'payment_reference' | 'total_amount' | 'reconciliation_status';
+
+function PaymentsTableInner({ payments }: PaymentsTableProps) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [insurerFilter, setInsurerFilter] = useState('all');
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
 
   const insurers = useMemo(() => {
     const map = new Map<string, string>();
@@ -51,6 +65,52 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
       return true;
     });
   }, [payments, statusFilter, insurerFilter, search]);
+
+  const sorted = useMemo(() => {
+    if (!sortField) return filtered;
+    return [...filtered].sort((a, b) => {
+      let aVal: string | number | null | undefined;
+      let bVal: string | number | null | undefined;
+
+      switch (sortField) {
+        case 'payment_date':
+          aVal = a.payment_date;
+          bVal = b.payment_date;
+          break;
+        case 'payment_reference':
+          aVal = a.payment_reference;
+          bVal = b.payment_reference;
+          break;
+        case 'total_amount':
+          aVal = a.total_amount;
+          bVal = b.total_amount;
+          break;
+        case 'reconciliation_status':
+          aVal = a.reconciliation_status;
+          bVal = b.reconciliation_status;
+          break;
+      }
+
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+      if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filtered, sortField, sortDir]);
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField === field) {
+      return sortDir === 'asc' ? (
+        <ArrowUp className="h-3.5 w-3.5" />
+      ) : (
+        <ArrowDown className="h-3.5 w-3.5" />
+      );
+    }
+    return <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />;
+  };
 
   const resetFilters = () => {
     setSearch('');
@@ -105,17 +165,49 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Referencia</TableHead>
+              <TableHead>
+                <button
+                  className="flex items-center gap-1 hover:text-foreground"
+                  onClick={() => toggleSort('payment_reference')}
+                >
+                  Referencia
+                  {renderSortIcon('payment_reference')}
+                </button>
+              </TableHead>
               <TableHead>Operadora</TableHead>
-              <TableHead>Data Pagamento</TableHead>
-              <TableHead className="text-right">Valor Total</TableHead>
+              <TableHead>
+                <button
+                  className="flex items-center gap-1 hover:text-foreground"
+                  onClick={() => toggleSort('payment_date')}
+                >
+                  Data Pagamento
+                  {renderSortIcon('payment_date')}
+                </button>
+              </TableHead>
+              <TableHead className="text-right">
+                <button
+                  className="flex items-center gap-1 hover:text-foreground ml-auto"
+                  onClick={() => toggleSort('total_amount')}
+                >
+                  Valor Total
+                  {renderSortIcon('total_amount')}
+                </button>
+              </TableHead>
               <TableHead className="text-right">Conciliado</TableHead>
               <TableHead className="text-right">Diferenca</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>
+                <button
+                  className="flex items-center gap-1 hover:text-foreground"
+                  onClick={() => toggleSort('reconciliation_status')}
+                >
+                  Status
+                  {renderSortIcon('reconciliation_status')}
+                </button>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((payment) => (
+            {sorted.map((payment) => (
               <TableRow key={payment.id}>
                 <TableCell>
                   <Link
@@ -143,10 +235,14 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
                 </TableCell>
               </TableRow>
             ))}
-            {filtered.length === 0 && (
+            {sorted.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  Nenhum pagamento encontrado
+                <TableCell colSpan={7}>
+                  <EmptyState
+                    icon={CreditCard}
+                    title="Nenhum pagamento encontrado"
+                    description="Nao ha pagamentos com os filtros selecionados."
+                  />
                 </TableCell>
               </TableRow>
             )}
@@ -156,3 +252,5 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
     </div>
   );
 }
+
+export const PaymentsTable = React.memo(PaymentsTableInner);

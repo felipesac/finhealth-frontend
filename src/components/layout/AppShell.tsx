@@ -5,10 +5,18 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sidebar, navItems } from './Sidebar';
 import { Header } from './Header';
+import { Breadcrumbs } from './Breadcrumbs';
 import { useUIStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { MobileBottomNav } from './MobileBottomNav';
+import dynamic from 'next/dynamic';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
+
+const MobileBottomNav = dynamic(
+  () => import('./MobileBottomNav').then((m) => ({ default: m.MobileBottomNav })),
+  { ssr: false }
+);
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -20,6 +28,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { sidebarCollapsed } = useUIStore();
   const pathname = usePathname();
+  useKeyboardShortcuts();
 
   useEffect(() => {
     setMounted(true);
@@ -43,6 +52,13 @@ export function AppShell({ children, userEmail }: AppShellProps) {
   }
 
   return (
+    <>
+    <a
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
+    >
+      Pular para o conteúdo principal
+    </a>
     <div className="flex h-screen bg-background">
       {/* Desktop sidebar */}
       <div className="hidden md:block">
@@ -116,9 +132,14 @@ export function AppShell({ children, userEmail }: AppShellProps) {
           userEmail={userEmail}
           onMobileMenuToggle={() => setMobileOpen(true)}
         />
-        <main className="flex-1 overflow-auto p-4 pb-20 sm:p-6 sm:pb-6 md:pb-8 lg:p-8">{children}</main>
+        <main id="main-content" className="flex-1 overflow-auto p-4 pb-20 sm:p-6 sm:pb-6 md:pb-8 lg:p-8">
+          <Breadcrumbs />
+          {children}
+        </main>
         <MobileBottomNav />
       </div>
     </div>
+    <KeyboardShortcutsHelp />
+    </>
   );
 }

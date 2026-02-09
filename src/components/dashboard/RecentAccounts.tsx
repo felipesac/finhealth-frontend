@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +28,7 @@ const statusConfig: Record<AccountStatus, { label: string; variant: 'default' | 
   appeal: { label: 'Em Recurso', variant: 'secondary' },
 };
 
-export function RecentAccounts({ accounts }: RecentAccountsProps) {
+function RecentAccountsInner({ accounts }: RecentAccountsProps) {
   return (
     <Card>
       <CardHeader>
@@ -79,3 +80,5 @@ export function RecentAccounts({ accounts }: RecentAccountsProps) {
     </Card>
   );
 }
+
+export const RecentAccounts = React.memo(RecentAccountsInner);

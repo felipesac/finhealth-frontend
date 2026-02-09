@@ -16,8 +16,28 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "FinHealth - Sistema de Gestao Financeira Hospitalar",
-  description: "Sistema de gestao financeira para faturamento hospitalar, TISS, glosas e conciliacao",
+  title: {
+    default: 'FinHealth - Gestao Financeira de Saude',
+    template: '%s | FinHealth',
+  },
+  description: 'Sistema de gestao financeira para operadoras de saude. Controle de contas medicas, glosas, pagamentos e faturamento TISS/SUS.',
+  icons: {
+    icon: '/favicon.svg',
+  },
+  openGraph: {
+    title: 'FinHealth - Gestao Financeira de Saude',
+    description: 'Sistema de gestao financeira para operadoras de saude. Controle de contas medicas, glosas, pagamentos e faturamento TISS/SUS.',
+    url: 'https://finhealth.app',
+    siteName: 'FinHealth',
+    images: [{ url: '/og-image.svg', width: 1200, height: 630, alt: 'FinHealth' }],
+    locale: 'pt_BR',
+    type: 'website',
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({

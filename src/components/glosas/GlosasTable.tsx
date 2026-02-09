@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Table,
@@ -12,6 +13,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { formatCurrency, formatDate } from '@/lib/formatters';
+import { ArrowUpDown, ArrowUp, ArrowDown, AlertCircle } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { Glosa, AppealStatus, GlosaType } from '@/types';
 
 interface GlosasTableProps {
@@ -32,24 +35,128 @@ const glosaTypeLabels: Record<GlosaType, string> = {
   linear: 'Linear',
 };
 
-export function GlosasTable({ glosas }: GlosasTableProps) {
+type SortField = 'glosa_code' | 'glosa_type' | 'original_amount' | 'glosa_amount' | 'appeal_status';
+
+function GlosasTableInner({ glosas }: GlosasTableProps) {
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  const sorted = useMemo(() => {
+    if (!sortField) return glosas;
+    return [...glosas].sort((a, b) => {
+      let aVal: string | number | null | undefined;
+      let bVal: string | number | null | undefined;
+
+      switch (sortField) {
+        case 'glosa_code':
+          aVal = a.glosa_code;
+          bVal = b.glosa_code;
+          break;
+        case 'glosa_type':
+          aVal = a.glosa_type;
+          bVal = b.glosa_type;
+          break;
+        case 'original_amount':
+          aVal = a.original_amount;
+          bVal = b.original_amount;
+          break;
+        case 'glosa_amount':
+          aVal = a.glosa_amount;
+          bVal = b.glosa_amount;
+          break;
+        case 'appeal_status':
+          aVal = a.appeal_status;
+          bVal = b.appeal_status;
+          break;
+      }
+
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+      if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [glosas, sortField, sortDir]);
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField === field) {
+      return sortDir === 'asc' ? (
+        <ArrowUp className="h-3.5 w-3.5" />
+      ) : (
+        <ArrowDown className="h-3.5 w-3.5" />
+      );
+    }
+    return <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />;
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Codigo</TableHead>
+            <TableHead>
+              <button
+                className="flex items-center gap-1 hover:text-foreground"
+                onClick={() => toggleSort('glosa_code')}
+              >
+                Codigo
+                {renderSortIcon('glosa_code')}
+              </button>
+            </TableHead>
             <TableHead>Conta</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Valor Original</TableHead>
-            <TableHead>Valor Glosado</TableHead>
+            <TableHead>
+              <button
+                className="flex items-center gap-1 hover:text-foreground"
+                onClick={() => toggleSort('glosa_type')}
+              >
+                Tipo
+                {renderSortIcon('glosa_type')}
+              </button>
+            </TableHead>
+            <TableHead>
+              <button
+                className="flex items-center gap-1 hover:text-foreground"
+                onClick={() => toggleSort('original_amount')}
+              >
+                Valor Original
+                {renderSortIcon('original_amount')}
+              </button>
+            </TableHead>
+            <TableHead>
+              <button
+                className="flex items-center gap-1 hover:text-foreground"
+                onClick={() => toggleSort('glosa_amount')}
+              >
+                Valor Glosado
+                {renderSortIcon('glosa_amount')}
+              </button>
+            </TableHead>
             <TableHead>Probabilidade</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>
+              <button
+                className="flex items-center gap-1 hover:text-foreground"
+                onClick={() => toggleSort('appeal_status')}
+              >
+                Status
+                {renderSortIcon('appeal_status')}
+              </button>
+            </TableHead>
             <TableHead>Data</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {glosas.map((glosa) => {
+          {sorted.map((glosa) => {
             const status = appealStatusConfig[glosa.appeal_status];
             return (
               <TableRow key={glosa.id}>
@@ -94,8 +201,12 @@ export function GlosasTable({ glosas }: GlosasTableProps) {
           })}
           {glosas.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8" role="status">
-                Nenhuma glosa encontrada
+              <TableCell colSpan={8}>
+                <EmptyState
+                  icon={AlertCircle}
+                  title="Nenhuma glosa encontrada"
+                  description="Nao ha glosas com os filtros selecionados."
+                />
               </TableCell>
             </TableRow>
           )}
@@ -104,3 +215,5 @@ export function GlosasTable({ glosas }: GlosasTableProps) {
     </div>
   );
 }
+
+export const GlosasTable = React.memo(GlosasTableInner);
