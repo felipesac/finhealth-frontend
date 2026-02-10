@@ -56,21 +56,21 @@ export function TendenciasCharts({ monthlyData, glosasTrendData }: TendenciasCha
                   type="monotone"
                   dataKey="faturamento"
                   name="Faturamento"
-                  stroke="hsl(224, 76%, 48%)"
+                  stroke="hsl(var(--chart-1))"
                   strokeWidth={2}
                 />
                 <Line
                   type="monotone"
                   dataKey="glosas"
                   name="Glosas"
-                  stroke="hsl(0, 84%, 60%)"
+                  stroke="hsl(var(--chart-5))"
                   strokeWidth={2}
                 />
                 <Line
                   type="monotone"
                   dataKey="pagamentos"
                   name="Pagamentos"
-                  stroke="hsl(162, 63%, 41%)"
+                  stroke="hsl(var(--chart-2))"
                   strokeWidth={2}
                 />
               </LineChart>
@@ -94,9 +94,9 @@ export function TendenciasCharts({ monthlyData, glosasTrendData }: TendenciasCha
                   formatter={(value) => formatCurrency(value as number)}
                 />
                 <Legend />
-                <Bar dataKey="administrativa" name="Administrativa" fill="hsl(0, 84%, 60%)" />
-                <Bar dataKey="tecnica" name="Tecnica" fill="hsl(38, 92%, 50%)" />
-                <Bar dataKey="linear" name="Linear" fill="hsl(224, 76%, 48%)" />
+                <Bar dataKey="administrativa" name="Administrativa" fill="hsl(var(--chart-5))" />
+                <Bar dataKey="tecnica" name="Tecnica" fill="hsl(var(--chart-3))" />
+                <Bar dataKey="linear" name="Linear" fill="hsl(var(--chart-1))" />
               </BarChart>
             </ResponsiveContainer>
           </div>

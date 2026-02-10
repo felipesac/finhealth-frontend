@@ -14,11 +14,11 @@ interface AccountsStatusChartProps {
 }
 
 const statusColors: Record<string, string> = {
-  pending: 'hsl(38, 92%, 50%)',
-  validated: 'hsl(224, 76%, 48%)',
-  sent: 'hsl(262, 52%, 47%)',
-  paid: 'hsl(162, 63%, 41%)',
-  glosa: 'hsl(0, 84%, 60%)',
+  pending: 'hsl(var(--chart-3))',
+  validated: 'hsl(var(--chart-1))',
+  sent: 'hsl(var(--chart-4))',
+  paid: 'hsl(var(--chart-2))',
+  glosa: 'hsl(var(--chart-5))',
   appeal: 'hsl(25, 95%, 53%)',
 };
 

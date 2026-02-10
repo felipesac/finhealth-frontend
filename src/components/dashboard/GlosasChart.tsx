@@ -9,7 +9,7 @@ interface GlosasChartProps {
   data: DashboardMetrics['glosasBreakdown'];
 }
 
-const COLORS = ['hsl(224, 76%, 48%)', 'hsl(162, 63%, 41%)', 'hsl(38, 92%, 50%)'];
+const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'];
 const LABELS: Record<string, string> = {
   administrativa: 'Administrativa',
   tecnica: 'Tecnica',

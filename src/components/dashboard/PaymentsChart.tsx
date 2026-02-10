@@ -50,8 +50,8 @@ export function PaymentsChart({ data }: PaymentsChartProps) {
               <XAxis dataKey="month" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
               <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="received" name="received" stroke="hsl(224, 76%, 48%)" fill="hsl(224, 76%, 48%)" fillOpacity={0.15} strokeWidth={2} />
-              <Area type="monotone" dataKey="matched" name="matched" stroke="hsl(162, 63%, 41%)" fill="hsl(162, 63%, 41%)" fillOpacity={0.15} strokeWidth={2} />
+              <Area type="monotone" dataKey="received" name="received" stroke="hsl(var(--chart-1))" fill="hsl(var(--chart-1))" fillOpacity={0.15} strokeWidth={2} />
+              <Area type="monotone" dataKey="matched" name="matched" stroke="hsl(var(--chart-2))" fill="hsl(var(--chart-2))" fillOpacity={0.15} strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

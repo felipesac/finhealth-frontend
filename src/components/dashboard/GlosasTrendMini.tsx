@@ -48,7 +48,7 @@ export function GlosasTrendMini({ data }: GlosasTrendMiniProps) {
                 <Line
                   type="monotone"
                   dataKey="amount"
-                  stroke={trend === 'up' ? 'hsl(0, 84%, 60%)' : 'hsl(162, 63%, 41%)'}
+                  stroke={trend === 'up' ? 'hsl(var(--chart-5))' : 'hsl(var(--chart-2))'}
                   strokeWidth={2}
                   dot={false}
                 />
