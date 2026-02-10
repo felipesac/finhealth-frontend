@@ -4,7 +4,7 @@
 **Sprint:** 2 — Data Integrity + UX
 **Points:** 3
 **Priority:** High
-**Status:** Pending
+**Status:** Ready for Review
 **Agent:** @data-engineer
 
 ---
@@ -15,17 +15,17 @@ Phase 2 findings M1, M2, M3: Four `user_id` columns lack FK to `auth.users`, `pa
 
 ## Acceptance Criteria
 
-- [ ] Add `updated_at TIMESTAMPTZ DEFAULT NOW()` to `procedures` table
-- [ ] Add `updated_at TIMESTAMPTZ DEFAULT NOW()` to `payments` table
-- [ ] Add `BEFORE UPDATE` triggers for `updated_at` on both tables
-- [ ] Clean any orphaned records where `user_id` references non-existent auth.users
-- [ ] Add FK constraint `notifications.user_id → auth.users(id) ON DELETE CASCADE`
-- [ ] Add FK constraint `digital_certificates.user_id → auth.users(id) ON DELETE CASCADE`
-- [ ] Add FK constraint `sus_bpa.user_id → auth.users(id) ON DELETE CASCADE`
-- [ ] Add FK constraint `sus_aih.user_id → auth.users(id) ON DELETE CASCADE`
-- [ ] Evaluate `patients.health_insurance_id`: convert to UUID FK or remove if unused
-- [ ] Write migration file `010_add_missing_constraints.sql`
-- [ ] All tests pass
+- [x] Add `updated_at TIMESTAMPTZ DEFAULT NOW()` to `procedures` table
+- [x] Add `updated_at TIMESTAMPTZ DEFAULT NOW()` to `payments` table
+- [x] Add `BEFORE UPDATE` triggers for `updated_at` on both tables
+- [x] Clean any orphaned records where `user_id` references non-existent auth.users
+- [x] Add FK constraint `notifications.user_id → auth.users(id) ON DELETE CASCADE`
+- [x] Add FK constraint `digital_certificates.user_id → auth.users(id) ON DELETE CASCADE`
+- [x] Add FK constraint `sus_bpa.user_id → auth.users(id) ON DELETE CASCADE`
+- [x] Add FK constraint `sus_aih.user_id → auth.users(id) ON DELETE CASCADE`
+- [x] Evaluate `patients.health_insurance_id`: convert to UUID FK or remove if unused
+- [x] Write migration file `010_add_missing_constraints.sql`
+- [x] All tests pass
 
 ## Technical Notes
 
@@ -35,13 +35,14 @@ Phase 2 findings M1, M2, M3: Four `user_id` columns lack FK to `auth.users`, `pa
 
 ## Files to Modify
 
-- `supabase/migrations/010_add_missing_constraints.sql` (NEW)
-- `src/types/database.ts` (ADD updated_at to Procedure and Payment interfaces)
+- `supabase/migrations/010_add_missing_constraints.sql` (NEW) [x]
+- `src/types/database.ts` (ADD updated_at to Procedure/Payment, deprecate health_insurance_id) [x]
+- `src/components/payments/PaymentsTable.test.tsx` (ADD updated_at to test fixtures) [x]
 
 ## Definition of Done
 
-- [ ] Migration runs without errors
-- [ ] No orphaned records exist
-- [ ] `updated_at` auto-updates on procedure/payment modification
-- [ ] FK violations prevented on insert
-- [ ] All tests pass
+- [x] Migration runs without errors
+- [x] No orphaned records exist
+- [x] `updated_at` auto-updates on procedure/payment modification
+- [x] FK violations prevented on insert
+- [x] All tests pass

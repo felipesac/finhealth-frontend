@@ -21,6 +21,7 @@ const mockPayments: Payment[] = [
     reconciliation_status: 'partial',
     metadata: {},
     created_at: '2024-06-15T10:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
     health_insurer: {
       id: 'h1', name: 'Unimed', ans_code: '123', tiss_version: '3.05',
       config: {}, active: true, created_at: '', updated_at: '',
@@ -37,6 +38,7 @@ const mockPayments: Payment[] = [
     reconciliation_status: 'matched',
     metadata: {},
     created_at: '2024-06-14T10:00:00Z',
+    updated_at: '2024-06-14T10:00:00Z',
     health_insurer: {
       id: 'h1', name: 'Unimed', ans_code: '123', tiss_version: '3.05',
       config: {}, active: true, created_at: '', updated_at: '',

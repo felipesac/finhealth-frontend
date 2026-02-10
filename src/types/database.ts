@@ -32,7 +32,8 @@ export interface Patient {
   phone?: string;
   email?: string;
   address?: Record<string, unknown>;
-  health_insurance_id?: string;
+  /** @deprecated Renamed to health_insurance_id_deprecated in DB. Use health_insurer_id via medical_accounts. */
+  health_insurance_id_deprecated?: string;
   created_at: string;
   updated_at: string;
 }
@@ -103,6 +104,7 @@ export interface Procedure {
   appeal_status?: string;
   metadata: Record<string, unknown>;
   created_at: string;
+  updated_at: string;
   created_by?: string;
 }
 
@@ -146,6 +148,7 @@ export interface Payment {
   payment_file_type?: string;
   metadata: Record<string, unknown>;
   created_at: string;
+  updated_at: string;
   created_by?: string;
   // Joined relations
   health_insurer?: HealthInsurer;
