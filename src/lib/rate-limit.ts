@@ -1,19 +1,9 @@
-const rateMap = new Map<string, { count: number; resetAt: number }>();
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
-/** Cleanup expired entries every 5 minutes to prevent memory leaks */
-const CLEANUP_INTERVAL = 5 * 60 * 1000;
-let lastCleanup = Date.now();
-
-function cleanupExpired() {
-  const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL) return;
-  lastCleanup = now;
-  for (const [key, entry] of Array.from(rateMap.entries())) {
-    if (now > entry.resetAt) {
-      rateMap.delete(key);
-    }
-  }
-}
+// ---------------------------------------------------------------------------
+// Types (unchanged public API)
+// ---------------------------------------------------------------------------
 
 interface RateLimitConfig {
   /** Max requests allowed in the window */
@@ -28,11 +18,26 @@ interface RateLimitResult {
   resetAt: number;
 }
 
-/**
- * In-memory rate limiter with automatic cleanup of expired entries.
- * Returns { success, remaining, resetAt }.
- */
-export function rateLimit(
+// ---------------------------------------------------------------------------
+// In-memory fallback (used when Redis is unavailable)
+// ---------------------------------------------------------------------------
+
+const rateMap = new Map<string, { count: number; resetAt: number }>();
+const CLEANUP_INTERVAL = 5 * 60 * 1000;
+let lastCleanup = Date.now();
+
+function cleanupExpired() {
+  const now = Date.now();
+  if (now - lastCleanup < CLEANUP_INTERVAL) return;
+  lastCleanup = now;
+  for (const [key, entry] of Array.from(rateMap.entries())) {
+    if (now > entry.resetAt) {
+      rateMap.delete(key);
+    }
+  }
+}
+
+function inMemoryRateLimit(
   key: string,
   { limit, windowSeconds }: RateLimitConfig
 ): RateLimitResult {
@@ -53,6 +58,87 @@ export function rateLimit(
 
   entry.count++;
   return { success: true, remaining: limit - entry.count, resetAt: entry.resetAt };
+}
+
+// ---------------------------------------------------------------------------
+// Redis setup (singleton, lazy)
+// ---------------------------------------------------------------------------
+
+let redis: Redis | null = null;
+let redisAvailable: boolean | null = null;
+
+function getRedis(): Redis | null {
+  if (redisAvailable === false) return null;
+  if (redis) return redis;
+
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    redisAvailable = false;
+    return null;
+  }
+
+  try {
+    redis = new Redis({ url, token });
+    redisAvailable = true;
+    return redis;
+  } catch {
+    redisAvailable = false;
+    return null;
+  }
+}
+
+// Cache Ratelimit instances per config key to avoid re-creating them
+const limiterCache = new Map<string, Ratelimit>();
+
+function getUpstashLimiter(
+  redisInstance: Redis,
+  { limit, windowSeconds }: RateLimitConfig
+): Ratelimit {
+  const cacheKey = `${limit}:${windowSeconds}`;
+  let limiter = limiterCache.get(cacheKey);
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis: redisInstance,
+      limiter: Ratelimit.slidingWindow(limit, `${windowSeconds} s`),
+      prefix: 'finhealth:rl',
+    });
+    limiterCache.set(cacheKey, limiter);
+  }
+  return limiter;
+}
+
+// ---------------------------------------------------------------------------
+// Public API (signatures unchanged)
+// ---------------------------------------------------------------------------
+
+/**
+ * Rate limiter backed by Upstash Redis (persistent across Vercel instances).
+ * Falls back to in-memory Map when Redis env vars are not configured.
+ * Returns { success, remaining, resetAt }.
+ */
+export async function rateLimit(
+  key: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  const redisInstance = getRedis();
+
+  if (!redisInstance) {
+    return inMemoryRateLimit(key, config);
+  }
+
+  try {
+    const limiter = getUpstashLimiter(redisInstance, config);
+    const res = await limiter.limit(key);
+    return {
+      success: res.success,
+      remaining: res.remaining,
+      resetAt: res.reset,
+    };
+  } catch {
+    return inMemoryRateLimit(key, config);
+  }
 }
 
 /**

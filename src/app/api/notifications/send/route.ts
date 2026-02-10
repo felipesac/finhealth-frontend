@@ -8,7 +8,7 @@ import { sendPushNotification, type PushSubscriptionData } from '@/lib/push';
 export async function POST(request: Request) {
   try {
     const rlKey = getRateLimitKey(request, 'notification-send');
-    const { success: allowed } = rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json({ error: 'Muitas requisicoes' }, { status: 429 });
     }

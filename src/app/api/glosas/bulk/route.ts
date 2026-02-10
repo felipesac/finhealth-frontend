@@ -17,7 +17,7 @@ const bulkGlosaSchema = z.object({
 export async function POST(request: Request) {
   try {
     const rlKey = getRateLimitKey(request, 'glosas-bulk');
-    const { success: allowed } = rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 });
     }

@@ -63,7 +63,7 @@ describe('PATCH /api/appeals', () => {
   });
 
   it('returns 429 when rate limited', async () => {
-    vi.mocked(rateLimit).mockReturnValueOnce({ success: false, remaining: 0, resetAt: Date.now() + 60000 });
+    vi.mocked(rateLimit).mockResolvedValueOnce({ success: false, remaining: 0, resetAt: Date.now() + 60000 });
     const res = await PATCH(makeReq({
       glosaId: '550e8400-e29b-41d4-a716-446655440000',
       text: 'Test', action: 'submit',

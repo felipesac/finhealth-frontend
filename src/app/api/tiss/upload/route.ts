@@ -12,7 +12,7 @@ const MAX_XML_SIZE = 5 * 1024 * 1024; // 5MB
 export async function POST(request: Request) {
   try {
     const rlKey = getRateLimitKey(request, 'tiss-upload');
-    const { success: allowed } = rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },

@@ -12,7 +12,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const rlKey = getRateLimitKey(request, 'procedures-update');
-    const { success: allowed } = rateLimit(rlKey, { limit: 20, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 20, windowSeconds: 60 });
     if (!allowed) return NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 });
 
     const supabase = await createClient();
@@ -53,7 +53,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     const rlKey = getRateLimitKey(request, 'procedures-delete');
-    const { success: allowed } = rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
     if (!allowed) return NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 });
 
     const supabase = await createClient();

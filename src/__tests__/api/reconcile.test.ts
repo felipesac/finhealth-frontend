@@ -67,7 +67,7 @@ describe('POST /api/reconcile', () => {
   });
 
   it('returns 429 when rate limited', async () => {
-    vi.mocked(rateLimit).mockReturnValueOnce({ success: false, remaining: 0, resetAt: Date.now() + 60000 });
+    vi.mocked(rateLimit).mockResolvedValueOnce({ success: false, remaining: 0, resetAt: Date.now() + 60000 });
     const res = await POST(makeReq(validBody));
     expect(res.status).toBe(429);
   });

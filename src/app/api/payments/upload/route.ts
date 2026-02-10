@@ -63,7 +63,7 @@ function parseOFX(content: string): ParsedPayment[] {
 export async function POST(request: Request) {
   try {
     const rlKey = getRateLimitKey(request, 'payments-upload');
-    const { success: allowed } = rateLimit(rlKey, { limit: 5, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 5, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },

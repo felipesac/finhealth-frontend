@@ -10,7 +10,7 @@ import { createHash } from 'node:crypto';
 export async function POST(request: Request) {
   try {
     const rlKey = getRateLimitKey(request, 'cert-upload');
-    const { success: allowed } = rateLimit(rlKey, { limit: 5, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 5, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
@@ -166,7 +166,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const rlKey = getRateLimitKey(request, 'cert-list');
-    const { success: allowed } = rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
@@ -209,7 +209,7 @@ export async function GET(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const rlKey = getRateLimitKey(request, 'cert-delete');
-    const { success: allowed } = rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },

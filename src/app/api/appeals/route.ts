@@ -8,7 +8,7 @@ import { checkPermission } from '@/lib/rbac';
 export async function PATCH(request: Request) {
   try {
     const rlKey = getRateLimitKey(request, 'appeals');
-    const { success: allowed } = rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
         { error: 'Muitas requisicoes. Tente novamente em breve.' },

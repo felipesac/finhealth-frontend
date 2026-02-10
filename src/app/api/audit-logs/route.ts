@@ -6,7 +6,7 @@ import { checkPermission } from '@/lib/rbac';
 export async function GET(request: Request) {
   try {
     const rlKey = getRateLimitKey(request, 'audit-logs');
-    const { success: allowed } = rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },

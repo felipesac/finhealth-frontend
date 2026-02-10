@@ -1,47 +1,55 @@
 import { describe, it, expect, vi } from 'vitest';
 import { rateLimit, getRateLimitKey } from './rate-limit';
 
-describe('rateLimit', () => {
-  it('allows requests under the limit', () => {
+// Tests run without UPSTASH env vars → exercises in-memory fallback path
+
+describe('rateLimit (in-memory fallback)', () => {
+  it('allows requests under the limit', async () => {
     const key = `test-allow-${Date.now()}`;
-    const result = rateLimit(key, { limit: 5, windowSeconds: 60 });
+    const result = await rateLimit(key, { limit: 5, windowSeconds: 60 });
     expect(result.success).toBe(true);
     expect(result.remaining).toBe(4);
     expect(result.resetAt).toBeGreaterThan(Date.now());
   });
 
-  it('tracks count correctly', () => {
+  it('tracks count correctly', async () => {
     const key = `test-count-${Date.now()}`;
-    rateLimit(key, { limit: 3, windowSeconds: 60 });
-    rateLimit(key, { limit: 3, windowSeconds: 60 });
-    const result = rateLimit(key, { limit: 3, windowSeconds: 60 });
+    await rateLimit(key, { limit: 3, windowSeconds: 60 });
+    await rateLimit(key, { limit: 3, windowSeconds: 60 });
+    const result = await rateLimit(key, { limit: 3, windowSeconds: 60 });
     expect(result.success).toBe(true);
     expect(result.remaining).toBe(0);
   });
 
-  it('blocks requests over the limit', () => {
+  it('blocks requests over the limit', async () => {
     const key = `test-block-${Date.now()}`;
-    rateLimit(key, { limit: 2, windowSeconds: 60 });
-    rateLimit(key, { limit: 2, windowSeconds: 60 });
-    const result = rateLimit(key, { limit: 2, windowSeconds: 60 });
+    await rateLimit(key, { limit: 2, windowSeconds: 60 });
+    await rateLimit(key, { limit: 2, windowSeconds: 60 });
+    const result = await rateLimit(key, { limit: 2, windowSeconds: 60 });
     expect(result.success).toBe(false);
     expect(result.remaining).toBe(0);
   });
 
-  it('resets after window expires', () => {
+  it('resets after window expires', async () => {
     const key = `test-reset-${Date.now()}`;
     vi.useFakeTimers();
 
-    rateLimit(key, { limit: 1, windowSeconds: 10 });
-    const blocked = rateLimit(key, { limit: 1, windowSeconds: 10 });
+    await rateLimit(key, { limit: 1, windowSeconds: 10 });
+    const blocked = await rateLimit(key, { limit: 1, windowSeconds: 10 });
     expect(blocked.success).toBe(false);
 
     vi.advanceTimersByTime(11000);
 
-    const allowed = rateLimit(key, { limit: 1, windowSeconds: 10 });
+    const allowed = await rateLimit(key, { limit: 1, windowSeconds: 10 });
     expect(allowed.success).toBe(true);
 
     vi.useRealTimers();
+  });
+
+  it('returns a promise', () => {
+    const key = `test-promise-${Date.now()}`;
+    const result = rateLimit(key, { limit: 5, windowSeconds: 60 });
+    expect(result).toBeInstanceOf(Promise);
   });
 });
 

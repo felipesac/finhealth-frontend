@@ -13,7 +13,7 @@ export async function PATCH(
     const { id } = await params;
 
     const rlKey = getRateLimitKey(request, 'glosas-update');
-    const { success: allowed } = rateLimit(rlKey, { limit: 20, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 20, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
@@ -80,7 +80,7 @@ export async function DELETE(
     const { id } = await params;
 
     const rlKey = getRateLimitKey(request, 'glosas-delete');
-    const { success: allowed } = rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
+    const { success: allowed } = await rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
