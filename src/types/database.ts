@@ -77,6 +77,7 @@ export interface MedicalAccount {
   updated_at: string;
   sent_at?: string;
   paid_at?: string;
+  created_by?: string;
   // Joined relations
   patient?: Patient;
   health_insurer?: HealthInsurer;
@@ -102,6 +103,7 @@ export interface Procedure {
   appeal_status?: string;
   metadata: Record<string, unknown>;
   created_at: string;
+  created_by?: string;
 }
 
 export interface Glosa {
@@ -123,6 +125,7 @@ export interface Glosa {
   priority_score?: number;
   created_at: string;
   updated_at: string;
+  created_by?: string;
   // Joined relations
   medical_account?: MedicalAccount;
   procedure?: Procedure;
@@ -143,6 +146,7 @@ export interface Payment {
   payment_file_type?: string;
   metadata: Record<string, unknown>;
   created_at: string;
+  created_by?: string;
   // Joined relations
   health_insurer?: HealthInsurer;
 }

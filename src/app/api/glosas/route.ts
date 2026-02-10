@@ -97,6 +97,7 @@ export async function POST(request: Request) {
       .insert({
         ...parsed.data,
         appeal_status: 'pending',
+        created_by: auth.userId,
       })
       .select()
       .single();

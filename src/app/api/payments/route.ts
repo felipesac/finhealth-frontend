@@ -100,6 +100,7 @@ export async function POST(request: Request) {
         unmatched_amount: parsed.data.total_amount,
         reconciliation_status: 'pending',
         metadata: {},
+        created_by: auth.userId,
       })
       .select()
       .single();
