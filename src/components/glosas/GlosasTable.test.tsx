@@ -55,41 +55,69 @@ describe('GlosasTable', () => {
   it('renders table headers', () => {
     render(<GlosasTable glosas={mockGlosas} />);
     expect(screen.getByText('Codigo')).toBeInTheDocument();
-    expect(screen.getByText('Conta')).toBeInTheDocument();
-    expect(screen.getByText('Tipo')).toBeInTheDocument();
-    expect(screen.getByText('Valor Original')).toBeInTheDocument();
-    expect(screen.getByText('Valor Glosado')).toBeInTheDocument();
-    expect(screen.getByText('Probabilidade')).toBeInTheDocument();
-    expect(screen.getByText('Status')).toBeInTheDocument();
+    expect(screen.getAllByText('Conta').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Tipo').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Valor Original').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Valor Glosado').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Probabilidade').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders glosa rows with data', () => {
     render(<GlosasTable glosas={mockGlosas} />);
-    expect(screen.getByText('GL-001')).toBeInTheDocument();
-    expect(screen.getByText('GL-002')).toBeInTheDocument();
-    expect(screen.getByText('CT-100')).toBeInTheDocument();
-    expect(screen.getByText('Administrativa')).toBeInTheDocument();
+    expect(screen.getAllByText('GL-001').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('GL-002').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('CT-100').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Administrativa').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders links to glosa details', () => {
     render(<GlosasTable glosas={mockGlosas} />);
-    const link = screen.getByText('GL-001').closest('a');
-    expect(link).toHaveAttribute('href', '/glosas/g1');
+    const links = screen.getAllByRole('link', { name: 'GL-001' });
+    expect(links[0]).toHaveAttribute('href', '/glosas/g1');
   });
 
   it('renders appeal status badges', () => {
     render(<GlosasTable glosas={mockGlosas} />);
-    expect(screen.getByText('Pendente')).toBeInTheDocument();
-    expect(screen.getByText('Enviado')).toBeInTheDocument();
+    expect(screen.getAllByText('Pendente').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Enviado').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders success probability with progress bar', () => {
     render(<GlosasTable glosas={mockGlosas} />);
-    expect(screen.getByText('75%')).toBeInTheDocument();
+    expect(screen.getAllByText('75%').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders empty state when no glosas', () => {
     render(<GlosasTable glosas={[]} />);
-    expect(screen.getByText('Nenhuma glosa encontrada')).toBeInTheDocument();
+    expect(screen.getAllByText('Nenhuma glosa encontrada').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders card view with glosa-card testids', () => {
+    render(<GlosasTable glosas={mockGlosas} />);
+    const cards = screen.getAllByTestId('glosa-card');
+    expect(cards).toHaveLength(2);
+  });
+
+  it('renders both table and card views via ResponsiveTable', () => {
+    const { container } = render(<GlosasTable glosas={mockGlosas} />);
+    const tableWrapper = container.querySelector('.hidden.md\\:block');
+    const cardsWrapper = container.querySelector('.block.md\\:hidden');
+    expect(tableWrapper).toBeInTheDocument();
+    expect(cardsWrapper).toBeInTheDocument();
+  });
+
+  it('card view shows key fields for each glosa', () => {
+    render(<GlosasTable glosas={mockGlosas} />);
+    // Data appears in both table and card views
+    expect(screen.getAllByText('GL-001').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Pendente').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('card view has checkboxes for bulk selection', () => {
+    render(<GlosasTable glosas={mockGlosas} />);
+    // Header checkbox + 2 table rows + 2 card rows = at least 5
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBeGreaterThanOrEqual(5);
   });
 });

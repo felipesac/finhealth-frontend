@@ -50,29 +50,28 @@ describe('PaymentsTable', () => {
   it('renders table headers', () => {
     render(<PaymentsTable payments={mockPayments} />);
     expect(screen.getByText('Referencia')).toBeInTheDocument();
-    expect(screen.getByText('Operadora')).toBeInTheDocument();
+    expect(screen.getAllByText('Operadora').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Data Pagamento')).toBeInTheDocument();
-    expect(screen.getByText('Valor Total')).toBeInTheDocument();
-    expect(screen.getByText('Status')).toBeInTheDocument();
+    expect(screen.getAllByText('Valor Total').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders payment rows', () => {
     render(<PaymentsTable payments={mockPayments} />);
-    expect(screen.getByText('REF-001')).toBeInTheDocument();
-    expect(screen.getByText('REF-002')).toBeInTheDocument();
-    expect(screen.getAllByText('Unimed')).toHaveLength(2);
+    expect(screen.getAllByText('REF-001').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('REF-002').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Unimed').length).toBeGreaterThanOrEqual(2);
   });
 
   it('renders links to payment details', () => {
     render(<PaymentsTable payments={mockPayments} />);
-    const link = screen.getByText('REF-001').closest('a');
-    expect(link).toHaveAttribute('href', '/pagamentos/pay-1');
+    const links = screen.getAllByRole('link', { name: 'REF-001' });
+    expect(links[0]).toHaveAttribute('href', '/pagamentos/pay-1');
   });
 
   it('renders reconciliation badges', () => {
     render(<PaymentsTable payments={mockPayments} />);
-    expect(screen.getByText('Parcial')).toBeInTheDocument();
-    // "Conciliado" appears as both table header and badge
+    expect(screen.getAllByText('Parcial').length).toBeGreaterThanOrEqual(1);
     const conciliados = screen.getAllByText('Conciliado');
     expect(conciliados.length).toBeGreaterThanOrEqual(2);
   });
@@ -81,26 +80,46 @@ describe('PaymentsTable', () => {
     render(<PaymentsTable payments={mockPayments} />);
     const searchInput = screen.getByPlaceholderText('Buscar por referencia...');
     fireEvent.change(searchInput, { target: { value: 'REF-001' } });
-    expect(screen.getByText('REF-001')).toBeInTheDocument();
+    expect(screen.getAllByText('REF-001').length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('REF-002')).not.toBeInTheDocument();
   });
 
   it('shows empty state when no payments match', () => {
     render(<PaymentsTable payments={[]} />);
-    expect(screen.getByText('Nenhum pagamento encontrado')).toBeInTheDocument();
+    expect(screen.getAllByText('Nenhum pagamento encontrado').length).toBeGreaterThanOrEqual(1);
   });
 
   it('resets filters on clear button click', () => {
     render(<PaymentsTable payments={mockPayments} />);
     const searchInput = screen.getByPlaceholderText('Buscar por referencia...');
     fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
-    expect(screen.getByText('Nenhum pagamento encontrado')).toBeInTheDocument();
+    expect(screen.getAllByText('Nenhum pagamento encontrado').length).toBeGreaterThanOrEqual(1);
 
-    // Click the X reset button
     const resetButtons = screen.getAllByRole('button');
     const clearBtn = resetButtons.find(btn => btn.querySelector('.lucide-x'));
     if (clearBtn) fireEvent.click(clearBtn);
 
-    expect(screen.getByText('REF-001')).toBeInTheDocument();
+    expect(screen.getAllByText('REF-001').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders card view with payment-card testids', () => {
+    render(<PaymentsTable payments={mockPayments} />);
+    const cards = screen.getAllByTestId('payment-card');
+    expect(cards).toHaveLength(2);
+  });
+
+  it('renders both table and card views via ResponsiveTable', () => {
+    const { container } = render(<PaymentsTable payments={mockPayments} />);
+    const tableWrapper = container.querySelector('.hidden.md\\:block');
+    const cardsWrapper = container.querySelector('.block.md\\:hidden');
+    expect(tableWrapper).toBeInTheDocument();
+    expect(cardsWrapper).toBeInTheDocument();
+  });
+
+  it('card view shows key fields for each payment', () => {
+    render(<PaymentsTable payments={mockPayments} />);
+    // Data appears in both table and card views
+    expect(screen.getAllByText('REF-001').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Unimed').length).toBeGreaterThanOrEqual(4);
   });
 });

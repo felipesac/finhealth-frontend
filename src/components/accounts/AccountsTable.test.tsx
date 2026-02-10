@@ -55,26 +55,26 @@ describe('AccountsTable', () => {
   it('renders table headers', () => {
     render(<AccountsTable accounts={mockAccounts} />);
     expect(screen.getByText('Numero')).toBeInTheDocument();
-    expect(screen.getByText('Paciente')).toBeInTheDocument();
-    expect(screen.getByText('Operadora')).toBeInTheDocument();
-    expect(screen.getByText('Tipo')).toBeInTheDocument();
-    expect(screen.getByText('Valor Total')).toBeInTheDocument();
-    expect(screen.getByText('Status')).toBeInTheDocument();
+    expect(screen.getAllByText('Paciente').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Operadora').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Tipo').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Valor Total').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders account rows with data', () => {
     render(<AccountsTable accounts={mockAccounts} />);
-    expect(screen.getByText('CT-001')).toBeInTheDocument();
-    expect(screen.getByText('CT-002')).toBeInTheDocument();
-    expect(screen.getByText('Maria Silva')).toBeInTheDocument();
-    expect(screen.getByText('Unimed')).toBeInTheDocument();
-    expect(screen.getByText('Internacao')).toBeInTheDocument();
+    expect(screen.getAllByText('CT-001').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('CT-002').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Maria Silva').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Unimed').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Internacao').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders links to account details', () => {
     render(<AccountsTable accounts={mockAccounts} />);
-    const link = screen.getByText('CT-001').closest('a');
-    expect(link).toHaveAttribute('href', '/contas/1');
+    const links = screen.getAllByRole('link', { name: 'CT-001' });
+    expect(links[0]).toHaveAttribute('href', '/contas/1');
   });
 
   it('shows dash for missing patient/insurer', () => {
@@ -85,12 +85,40 @@ describe('AccountsTable', () => {
 
   it('renders empty state when no accounts', () => {
     render(<AccountsTable accounts={[]} />);
-    expect(screen.getByText('Nenhuma conta encontrada')).toBeInTheDocument();
+    expect(screen.getAllByText('Nenhuma conta encontrada').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows glosa amount when greater than zero', () => {
     render(<AccountsTable accounts={mockAccounts} />);
-    // CT-001 has glosa_amount: 500
-    expect(screen.getByText(/500/)).toBeInTheDocument();
+    // Glosa amount appears in both table and card views
+    expect(screen.getAllByText(/500/).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders card view with account-card testids', () => {
+    render(<AccountsTable accounts={mockAccounts} />);
+    const cards = screen.getAllByTestId('account-card');
+    expect(cards).toHaveLength(2);
+  });
+
+  it('renders both table and card views via ResponsiveTable', () => {
+    const { container } = render(<AccountsTable accounts={mockAccounts} />);
+    const tableWrapper = container.querySelector('.hidden.md\\:block');
+    const cardsWrapper = container.querySelector('.block.md\\:hidden');
+    expect(tableWrapper).toBeInTheDocument();
+    expect(cardsWrapper).toBeInTheDocument();
+  });
+
+  it('card view shows key fields for each account', () => {
+    render(<AccountsTable accounts={mockAccounts} />);
+    // Data appears in both table and card views
+    expect(screen.getAllByText('CT-001').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Maria Silva').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('card view has checkboxes for bulk selection', () => {
+    render(<AccountsTable accounts={mockAccounts} />);
+    // Header checkbox + 2 table rows + 2 card rows = at least 5
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBeGreaterThanOrEqual(5);
   });
 });

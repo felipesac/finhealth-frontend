@@ -14,7 +14,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent } from '@/components/ui/card';
 import { BulkActions } from '@/components/ui/BulkActions';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown, AlertCircle } from 'lucide-react';
@@ -182,17 +184,8 @@ function GlosasTableInner({ glosas }: GlosasTableProps) {
 
   const isAllSelected = selectedIds.size === sorted.length && sorted.length > 0;
 
-  return (
-    <div className="space-y-3">
-      <BulkActions
-        selectedCount={selectedIds.size}
-        onClearSelection={() => setSelectedIds(new Set())}
-        onBulkUpdateStatus={handleBulkUpdateStatus}
-        onBulkDelete={handleBulkDelete}
-        statusOptions={glosaStatusOptions}
-        loading={bulkLoading}
-      />
-      <div className="rounded-md border">
+  const tableView = (
+    <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -309,7 +302,85 @@ function GlosasTableInner({ glosas }: GlosasTableProps) {
           )}
         </TableBody>
       </Table>
-      </div>
+    </div>
+  );
+
+  const cardsView = (
+    <div className="space-y-3">
+      {sorted.length === 0 ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="Nenhuma glosa encontrada"
+          description="Nao ha glosas com os filtros selecionados."
+        />
+      ) : (
+        sorted.map((glosa) => {
+          const status = appealStatusConfig[glosa.appeal_status];
+          return (
+            <Card key={glosa.id} data-testid="glosa-card">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    checked={selectedIds.has(glosa.id)}
+                    onCheckedChange={() => toggleSelect(glosa.id)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <Link
+                        href={`/glosas/${glosa.id}`}
+                        className="font-medium text-primary hover:underline truncate"
+                      >
+                        {glosa.glosa_code}
+                      </Link>
+                      <Badge variant={status.variant}>{status.label}</Badge>
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                      <div className="text-muted-foreground">Tipo</div>
+                      <div>{glosa.glosa_type ? glosaTypeLabels[glosa.glosa_type] : '-'}</div>
+                      <div className="text-muted-foreground">Valor Glosado</div>
+                      <div className="text-destructive font-medium">{formatCurrency(glosa.glosa_amount)}</div>
+                      <div className="text-muted-foreground">Valor Original</div>
+                      <div>{formatCurrency(glosa.original_amount)}</div>
+                      <div className="text-muted-foreground">Conta</div>
+                      <div>{glosa.medical_account?.account_number || '-'}</div>
+                      {glosa.success_probability !== undefined && (
+                        <>
+                          <div className="text-muted-foreground">Probabilidade</div>
+                          <div className="flex items-center gap-2">
+                            <Progress
+                              value={glosa.success_probability * 100}
+                              className="h-2 w-16"
+                              aria-label={`Probabilidade de sucesso: ${(glosa.success_probability * 100).toFixed(0)}%`}
+                            />
+                            <span>{(glosa.success_probability * 100).toFixed(0)}%</span>
+                          </div>
+                        </>
+                      )}
+                      <div className="text-muted-foreground">Data</div>
+                      <div>{formatDate(glosa.created_at)}</div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      <BulkActions
+        selectedCount={selectedIds.size}
+        onClearSelection={() => setSelectedIds(new Set())}
+        onBulkUpdateStatus={handleBulkUpdateStatus}
+        onBulkDelete={handleBulkDelete}
+        statusOptions={glosaStatusOptions}
+        loading={bulkLoading}
+      />
+      <ResponsiveTable table={tableView} cards={cardsView} />
     </div>
   );
 }

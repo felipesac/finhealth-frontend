@@ -12,7 +12,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent } from '@/components/ui/card';
 import { BulkActions } from '@/components/ui/BulkActions';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { StatusBadge } from './StatusBadge';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { useToast } from '@/hooks/use-toast';
@@ -179,17 +181,8 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
 
   const isAllSelected = selectedIds.size === sorted.length && sorted.length > 0;
 
-  return (
-    <div className="space-y-3">
-      <BulkActions
-        selectedCount={selectedIds.size}
-        onClearSelection={() => setSelectedIds(new Set())}
-        onBulkUpdateStatus={handleBulkUpdateStatus}
-        onBulkDelete={handleBulkDelete}
-        statusOptions={accountStatusOptions}
-        loading={bulkLoading}
-      />
-      <div className="rounded-md border">
+  const tableView = (
+    <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -298,7 +291,77 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
           )}
         </TableBody>
       </Table>
-      </div>
+    </div>
+  );
+
+  const cardsView = (
+    <div className="space-y-3">
+      {sorted.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="Nenhuma conta encontrada"
+          description="Nao ha contas medicas com os filtros selecionados."
+          actionLabel="Nova Conta"
+          actionHref="/contas/nova"
+        />
+      ) : (
+        sorted.map((account) => (
+          <Card key={account.id} data-testid="account-card">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={selectedIds.has(account.id)}
+                  onCheckedChange={() => toggleSelect(account.id)}
+                  className="mt-1"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <Link
+                      href={`/contas/${account.id}`}
+                      className="font-medium text-primary hover:underline truncate"
+                    >
+                      {account.account_number}
+                    </Link>
+                    <StatusBadge status={account.status} />
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <div className="text-muted-foreground">Paciente</div>
+                    <div className="truncate">{account.patient?.name || '-'}</div>
+                    <div className="text-muted-foreground">Operadora</div>
+                    <div className="truncate">{account.health_insurer?.name || '-'}</div>
+                    <div className="text-muted-foreground">Tipo</div>
+                    <div>{typeLabels[account.account_type]}</div>
+                    <div className="text-muted-foreground">Valor Total</div>
+                    <div>{formatCurrency(account.total_amount)}</div>
+                    {account.glosa_amount > 0 && (
+                      <>
+                        <div className="text-muted-foreground">Glosa</div>
+                        <div className="text-destructive">{formatCurrency(account.glosa_amount)}</div>
+                      </>
+                    )}
+                    <div className="text-muted-foreground">Data</div>
+                    <div>{formatDate(account.created_at)}</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      <BulkActions
+        selectedCount={selectedIds.size}
+        onClearSelection={() => setSelectedIds(new Set())}
+        onBulkUpdateStatus={handleBulkUpdateStatus}
+        onBulkDelete={handleBulkDelete}
+        statusOptions={accountStatusOptions}
+        loading={bulkLoading}
+      />
+      <ResponsiveTable table={tableView} cards={cardsView} />
     </div>
   );
 }
