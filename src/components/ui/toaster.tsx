@@ -29,7 +29,7 @@ export function Toaster() {
           </Toast>
         )
       })}
-      <ToastViewport />
+      <ToastViewport aria-live="polite" aria-atomic="true" />
     </ToastProvider>
   )
 }

@@ -126,7 +126,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
 
       <div
         className={cn(
-          'flex flex-1 flex-col transition-all duration-300',
+          'flex flex-1 flex-col transition-all duration-300 motion-reduce:transition-none',
           'md:ml-[4.5rem]',
           !sidebarCollapsed && 'md:ml-64'
         )}

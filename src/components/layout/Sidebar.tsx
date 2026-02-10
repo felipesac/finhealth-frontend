@@ -126,7 +126,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar-background transition-all duration-300',
+        'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar-background transition-all duration-300 motion-reduce:transition-none',
         sidebarCollapsed ? 'w-[4.5rem]' : 'w-64'
       )}
     >
@@ -147,7 +147,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         >
           <ChevronLeft
             className={cn(
-              'h-4 w-4 transition-transform duration-200',
+              'h-4 w-4 transition-transform duration-200 motion-reduce:transition-none',
               sidebarCollapsed && 'rotate-180'
             )}
           />
@@ -178,7 +178,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                   <span className="flex-1 text-left">{t(item.labelKey)}</span>
                   <ChevronDown
                     className={cn(
-                      'h-3.5 w-3.5 transition-transform duration-200',
+                      'h-3.5 w-3.5 transition-transform duration-200 motion-reduce:transition-none',
                       isExpanded && 'rotate-180'
                     )}
                   />

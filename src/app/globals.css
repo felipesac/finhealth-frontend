@@ -86,6 +86,18 @@
   }
 }
 
+/* Reduced motion: disable all animations and transitions */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Print styles */
 @media print {
   /* Hide non-essential UI */
@@ -146,5 +158,11 @@
   /* Remove shadows */
   * {
     box-shadow: none !important;
+  }
+
+  /* Hide Recharts SVG charts (not useful in print) */
+  .recharts-wrapper,
+  .recharts-responsive-container {
+    display: none !important;
   }
 }
