@@ -4,7 +4,7 @@
 **Sprint:** 2 — Data Integrity + UX
 **Points:** 2
 **Priority:** Medium
-**Status:** Pending
+**Status:** Ready for Review
 **Agent:** @data-engineer
 
 ---
@@ -15,12 +15,12 @@ Phase 2 findings L6, L7: `procedures.status`, `sus_bpa.status`, and `sus_aih.sta
 
 ## Acceptance Criteria
 
-- [ ] Add CHECK constraint to `procedures.status`: `CHECK (status IN ('pending', 'approved', 'denied', 'appealed'))`
-- [ ] Add CHECK constraint to `sus_bpa.status`: `CHECK (status IN ('rascunho', 'validado', 'enviado', 'aprovado', 'rejeitado'))`
-- [ ] Add CHECK constraint to `sus_aih.status`: `CHECK (status IN ('rascunho', 'validado', 'enviado', 'aprovado', 'rejeitado'))`
-- [ ] Verify no existing data violates the new constraints before applying
-- [ ] Write migration file `011_add_check_constraints.sql`
-- [ ] All tests pass
+- [x] Add CHECK constraint to `procedures.status`: `CHECK (status IN ('pending', 'approved', 'denied', 'appealed'))`
+- [x] Add CHECK constraint to `sus_bpa.status`: `CHECK (status IN ('rascunho', 'validado', 'enviado', 'aprovado', 'rejeitado'))`
+- [x] Add CHECK constraint to `sus_aih.status`: `CHECK (status IN ('rascunho', 'validado', 'enviado', 'aprovado', 'rejeitado'))`
+- [x] Verify no existing data violates the new constraints before applying
+- [x] Write migration file `011_add_check_constraints.sql`
+- [x] All tests pass
 
 ## Technical Notes
 
@@ -30,10 +30,10 @@ Phase 2 findings L6, L7: `procedures.status`, `sus_bpa.status`, and `sus_aih.sta
 
 ## Files to Modify
 
-- `supabase/migrations/011_add_check_constraints.sql` (NEW)
+- `supabase/migrations/011_add_check_constraints.sql` (NEW) [x]
 
 ## Definition of Done
 
-- [ ] Migration runs without errors
-- [ ] Invalid status values rejected by database
-- [ ] All tests pass
+- [x] Migration runs without errors
+- [x] Invalid status values rejected by database
+- [x] All tests pass
