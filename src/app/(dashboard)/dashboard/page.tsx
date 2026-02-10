@@ -1,15 +1,31 @@
 import type { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/server';
-import { MetricsGrid, GlosasChart, RecentAccounts } from '@/components/dashboard';
+import { MetricsGrid, RecentAccounts } from '@/components/dashboard';
 import { RealtimeDashboard } from '@/components/dashboard/RealtimeDashboard';
 import { DashboardCustomizer } from '@/components/dashboard/DashboardCustomizer';
 import { DashboardWidgets } from '@/components/dashboard/DashboardWidgets';
 import { QuickActions } from '@/components/dashboard/QuickActions';
-import { PaymentsChart } from '@/components/dashboard/PaymentsChart';
-import { AccountsStatusChart } from '@/components/dashboard/AccountsStatusChart';
-import { GlosasTrendMini } from '@/components/dashboard/GlosasTrendMini';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { ChartSkeleton } from '@/components/ui/ChartSkeleton';
 import type { DashboardMetrics, MedicalAccount } from '@/types';
+
+const GlosasChart = dynamic(
+  () => import('@/components/dashboard/GlosasChart').then((m) => m.GlosasChart),
+  { ssr: false, loading: () => <ChartSkeleton /> },
+);
+const PaymentsChart = dynamic(
+  () => import('@/components/dashboard/PaymentsChart').then((m) => m.PaymentsChart),
+  { ssr: false, loading: () => <ChartSkeleton /> },
+);
+const AccountsStatusChart = dynamic(
+  () => import('@/components/dashboard/AccountsStatusChart').then((m) => m.AccountsStatusChart),
+  { ssr: false, loading: () => <ChartSkeleton /> },
+);
+const GlosasTrendMini = dynamic(
+  () => import('@/components/dashboard/GlosasTrendMini').then((m) => m.GlosasTrendMini),
+  { ssr: false, loading: () => <ChartSkeleton /> },
+);
 
 export const metadata: Metadata = {
   title: 'Dashboard | FinHealth',

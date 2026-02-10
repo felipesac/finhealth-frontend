@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,19 +13,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, Download, Loader2 } from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from 'recharts';
+import { ChartSkeleton } from '@/components/ui/ChartSkeleton';
 import { formatCurrency } from '@/lib/formatters';
+
+const TendenciasCharts = dynamic(
+  () => import('@/components/reports/TendenciasCharts').then((m) => m.TendenciasCharts),
+  { ssr: false, loading: () => (
+    <div className="grid gap-4 sm:gap-6">
+      <ChartSkeleton />
+      <ChartSkeleton />
+    </div>
+  )},
+);
 
 interface MonthlyData {
   month: string;
@@ -128,71 +128,10 @@ export default function TendenciasPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolucao Financeira</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[280px] sm:h-[350px] lg:h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data.monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`} />
-                    <Tooltip
-                      formatter={(value) => formatCurrency(value as number)}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="faturamento"
-                      name="Faturamento"
-                      stroke="hsl(224, 76%, 48%)"
-                      strokeWidth={2}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="glosas"
-                      name="Glosas"
-                      stroke="hsl(0, 84%, 60%)"
-                      strokeWidth={2}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="pagamentos"
-                      name="Pagamentos"
-                      stroke="hsl(162, 63%, 41%)"
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Tendencia de Glosas por Tipo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[280px] sm:h-[350px] lg:h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.glosasTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`} />
-                    <Tooltip
-                      formatter={(value) => formatCurrency(value as number)}
-                    />
-                    <Legend />
-                    <Bar dataKey="administrativa" name="Administrativa" fill="hsl(0, 84%, 60%)" />
-                    <Bar dataKey="tecnica" name="Tecnica" fill="hsl(38, 92%, 50%)" />
-                    <Bar dataKey="linear" name="Linear" fill="hsl(224, 76%, 48%)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          <TendenciasCharts
+            monthlyData={data.monthlyData}
+            glosasTrendData={data.glosasTrendData}
+          />
 
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 sm:gap-4">
             <Card>
