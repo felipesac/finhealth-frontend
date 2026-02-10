@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +14,7 @@ import {
 import { Bell, Check, AlertCircle, Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { formatRelative } from '@/lib/formatters';
 import { useSWRFetch } from '@/hooks/useSWRFetch';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface Notification {
   id: string;
@@ -38,12 +40,19 @@ const typeIcons = {
 
 export function NotificationDropdown() {
   const router = useRouter();
-  const { data, mutate } = useSWRFetch<NotificationsResponse>('/api/notifications', {
-    refreshInterval: 60000,
-  });
+  const { data, mutate } = useSWRFetch<NotificationsResponse>('/api/notifications');
 
   const notifications = data?.data ?? [];
   const unreadCount = data?.unreadCount ?? 0;
+
+  const handleRealtimeChange = useCallback(() => {
+    mutate();
+  }, [mutate]);
+
+  useRealtimeSubscription(
+    { table: 'notifications', event: '*' },
+    handleRealtimeChange,
+  );
 
   const markAsRead = async (id: string) => {
     mutate(

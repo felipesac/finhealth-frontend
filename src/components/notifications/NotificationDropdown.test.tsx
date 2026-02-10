@@ -5,6 +5,7 @@ import { NotificationDropdown } from './NotificationDropdown';
 
 const mockPush = vi.fn();
 const mockMutate = vi.fn();
+let realtimeCallback: (...args: unknown[]) => void;
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
@@ -18,8 +19,17 @@ vi.mock('@/hooks/useSWRFetch', () => ({
   useSWRFetch: vi.fn(),
 }));
 
+vi.mock('@/hooks/useRealtimeSubscription', () => ({
+  useRealtimeSubscription: vi.fn((options, callback) => {
+    realtimeCallback = callback;
+    return { unsubscribe: vi.fn() };
+  }),
+}));
+
 import { useSWRFetch } from '@/hooks/useSWRFetch';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 const mockUseSWRFetch = vi.mocked(useSWRFetch);
+const mockUseRealtimeSubscription = vi.mocked(useRealtimeSubscription);
 
 const mockNotifications = [
   {
@@ -112,10 +122,22 @@ describe('NotificationDropdown', () => {
     });
   });
 
-  it('uses SWR with refreshInterval for polling', () => {
+  it('subscribes to notifications table via Realtime', () => {
     render(<NotificationDropdown />);
-    expect(mockUseSWRFetch).toHaveBeenCalledWith('/api/notifications', {
-      refreshInterval: 60000,
-    });
+    expect(mockUseRealtimeSubscription).toHaveBeenCalledWith(
+      { table: 'notifications', event: '*' },
+      expect.any(Function),
+    );
+  });
+
+  it('calls mutate when Realtime event is received', () => {
+    render(<NotificationDropdown />);
+    realtimeCallback({ eventType: 'INSERT', new: {}, old: {} });
+    expect(mockMutate).toHaveBeenCalled();
+  });
+
+  it('uses SWR without refreshInterval (no polling)', () => {
+    render(<NotificationDropdown />);
+    expect(mockUseSWRFetch).toHaveBeenCalledWith('/api/notifications');
   });
 });
