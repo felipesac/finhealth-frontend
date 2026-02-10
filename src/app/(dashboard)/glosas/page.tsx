@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GlosasTable } from '@/components/glosas';
@@ -70,6 +71,7 @@ async function getGlosasData(page: number, tab: string, search: string, glosaTyp
 }
 
 export default async function GlosasPage({ searchParams }: PageProps) {
+  const t = await getTranslations('glosas');
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || '1', 10));
   const tab = params.tab || 'pending';
@@ -80,9 +82,9 @@ export default async function GlosasPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Glosas</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('title')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Gerencie as glosas e recursos
+          {t('description')}
         </p>
       </div>
 
@@ -91,21 +93,21 @@ export default async function GlosasPage({ searchParams }: PageProps) {
       <Tabs defaultValue={tab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="pending" asChild>
-            <a href={`/glosas?tab=pending`}>Pendentes ({counts.pending})</a>
+            <a href={`/glosas?tab=pending`}>{t('pendingCount', { count: counts.pending })}</a>
           </TabsTrigger>
           <TabsTrigger value="in_progress" asChild>
-            <a href={`/glosas?tab=in_progress`}>Em Recurso ({counts.inProgress})</a>
+            <a href={`/glosas?tab=in_progress`}>{t('inProgressCount', { count: counts.inProgress })}</a>
           </TabsTrigger>
           <TabsTrigger value="resolved" asChild>
-            <a href={`/glosas?tab=resolved`}>Resolvidas ({counts.resolved})</a>
+            <a href={`/glosas?tab=resolved`}>{t('resolvedCount', { count: counts.resolved })}</a>
           </TabsTrigger>
           <TabsTrigger value="all" asChild>
-            <a href={`/glosas?tab=all`}>Todas ({counts.all})</a>
+            <a href={`/glosas?tab=all`}>{t('allCount', { count: counts.all })}</a>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value={tab} forceMount>
-          <ErrorBoundary fallbackMessage="Erro ao carregar tabela de glosas.">
+          <ErrorBoundary fallbackMessage={t('errorLoading')}>
             <GlosasTable glosas={glosas} />
           </ErrorBoundary>
         </TabsContent>

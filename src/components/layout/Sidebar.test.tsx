@@ -22,11 +22,68 @@ vi.mock('@/stores/ui-store', () => ({
   }),
 }));
 
+vi.mock('next-intl', () => ({
+  useTranslations: (namespace: string) => {
+    const translations: Record<string, Record<string, string>> = {
+      nav: {
+        dashboard: 'Dashboard',
+        accounts: 'Contas Medicas',
+        accountsList: 'Listagem',
+        newAccount: 'Nova Conta',
+        glosas: 'Glosas',
+        panel: 'Painel',
+        byInsurer: 'Por Operadora',
+        billing: 'Faturamento',
+        payments: 'Pagamentos',
+        reconciliation: 'Conciliacao',
+        delinquency: 'Inadimplencia',
+        tiss: 'TISS',
+        guides: 'Guias',
+        upload: 'Upload',
+        validation: 'Validacao',
+        batches: 'Lotes',
+        certificates: 'Certificados',
+        sus: 'SUS',
+        bpa: 'BPA',
+        aih: 'AIH',
+        sigtap: 'SIGTAP',
+        remessa: 'Remessa',
+        reports: 'Relatorios',
+        settings: 'Configuracoes',
+        general: 'Geral',
+        users: 'Usuarios',
+        insurers: 'Operadoras',
+        patients: 'Pacientes',
+        audit: 'Auditoria',
+        mainNav: 'Navegacao principal',
+      },
+      sidebar: {
+        expand: 'Expandir menu lateral',
+        collapse: 'Recolher menu lateral',
+      },
+    };
+    return (key: string) => translations[namespace]?.[key] ?? key;
+  },
+}));
+
+// Map from labelKey to expected translated text for assertions
+const navTranslations: Record<string, string> = {
+  dashboard: 'Dashboard',
+  accounts: 'Contas Medicas',
+  glosas: 'Glosas',
+  payments: 'Pagamentos',
+  tiss: 'TISS',
+  sus: 'SUS',
+  reports: 'Relatorios',
+  settings: 'Configuracoes',
+};
+
 describe('Sidebar', () => {
   it('renders all navigation items', () => {
     render(<Sidebar />);
     for (const item of navItems) {
-      expect(screen.getByText(item.label)).toBeInTheDocument();
+      const translatedLabel = navTranslations[item.labelKey] ?? item.labelKey;
+      expect(screen.getByText(translatedLabel)).toBeInTheDocument();
     }
   });
 
@@ -38,7 +95,8 @@ describe('Sidebar', () => {
     // Items with subItems render as buttons, not links
     expect(links).toHaveLength(itemsWithoutSub.length);
     for (const item of itemsWithSub) {
-      expect(screen.getByText(item.label).closest('button')).toBeInTheDocument();
+      const translatedLabel = navTranslations[item.labelKey] ?? item.labelKey;
+      expect(screen.getByText(translatedLabel).closest('button')).toBeInTheDocument();
     }
   });
 

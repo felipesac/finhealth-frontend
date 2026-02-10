@@ -16,6 +16,7 @@ import { LogOut, User, Menu } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { toast } from '@/hooks/use-toast';
+import { useTranslations } from 'next-intl';
 
 interface HeaderProps {
   userEmail?: string;
@@ -25,6 +26,8 @@ interface HeaderProps {
 export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
   const router = useRouter();
   const supabase = createClient();
+  const t = useTranslations('header');
+  const tAuth = useTranslations('auth');
 
   const handleSignOut = async () => {
     try {
@@ -33,8 +36,8 @@ export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
       router.push('/login');
     } catch {
       toast({
-        title: 'Erro ao sair',
-        description: 'Nao foi possivel encerrar a sessao. Tente novamente.',
+        title: t('signOutError'),
+        description: t('signOutErrorDescription'),
         variant: 'destructive',
       });
     }
@@ -51,13 +54,13 @@ export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
           variant="ghost"
           size="icon"
           className="md:hidden"
-          aria-label="Abrir menu"
+          aria-label={t('openMenu')}
           onClick={onMobileMenuToggle}
         >
           <Menu className="h-5 w-5" />
         </Button>
         <h2 className="hidden text-sm font-medium text-muted-foreground sm:block">
-          Sistema de Gestao Financeira
+          {t('systemName')}
         </h2>
       </div>
 
@@ -71,7 +74,7 @@ export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
             <Button
               variant="ghost"
               className="relative h-9 w-9 rounded-full"
-              aria-label="Menu do usuario"
+              aria-label={t('userMenu')}
             >
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary/10 text-xs font-medium text-primary">
@@ -83,7 +86,7 @@ export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Conta</p>
+                <p className="text-sm font-medium leading-none">{t('account')}</p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {userEmail}
                 </p>
@@ -92,12 +95,12 @@ export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push('/configuracoes')}>
               <User className="mr-2 h-4 w-4" />
-              <span>Perfil</span>
+              <span>{t('profile')}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Sair</span>
+              <span>{tAuth('logout')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

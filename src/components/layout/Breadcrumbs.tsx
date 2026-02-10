@@ -3,43 +3,49 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronRight, Home } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
-const segmentLabels: Record<string, string> = {
-  dashboard: 'Dashboard',
-  contas: 'Contas Médicas',
-  nova: 'Nova Conta',
-  glosas: 'Glosas',
-  pagamentos: 'Pagamentos',
-  tiss: 'TISS',
-  sus: 'SUS',
-  bpa: 'BPA',
-  aih: 'AIH',
-  sigtap: 'SIGTAP',
-  relatorios: 'Relatórios',
-  configuracoes: 'Configurações',
-  admin: 'Admin',
-  usuarios: 'Usuários',
-  auditoria: 'Auditoria',
-  operadoras: 'Operadoras',
-  pacientes: 'Pacientes',
-  upload: 'Upload',
-  validacao: 'Validação',
-  conciliacao: 'Conciliação',
-  faturamento: 'Faturamento',
-  operadora: 'Por Operadora',
-};
-
-function getLabel(segment: string): string {
+function getLabel(segment: string, segmentLabels: Record<string, string>): string {
   return segmentLabels[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
 }
 
 export function Breadcrumbs() {
   const pathname = usePathname();
+  const t = useTranslations('breadcrumbs');
 
   // Don't render on dashboard root
   if (!pathname || pathname === '/dashboard') {
     return null;
   }
+
+  const segmentLabels: Record<string, string> = {
+    dashboard: t('dashboard'),
+    contas: t('contas'),
+    nova: t('nova'),
+    glosas: t('glosas'),
+    pagamentos: t('pagamentos'),
+    tiss: t('tiss'),
+    sus: t('sus'),
+    bpa: t('bpa'),
+    aih: t('aih'),
+    sigtap: t('sigtap'),
+    relatorios: t('relatorios'),
+    configuracoes: t('configuracoes'),
+    admin: t('admin'),
+    usuarios: t('usuarios'),
+    auditoria: t('auditoria'),
+    operadoras: t('operadoras'),
+    pacientes: t('pacientes'),
+    upload: t('upload'),
+    validacao: t('validacao'),
+    conciliacao: t('conciliacao'),
+    faturamento: t('faturamento'),
+    operadora: t('operadora'),
+    lotes: t('lotes'),
+    certificados: t('certificados'),
+    remessa: t('remessa'),
+    inadimplencia: t('inadimplencia'),
+  };
 
   const segments = pathname.split('/').filter(Boolean);
 
@@ -47,7 +53,7 @@ export function Breadcrumbs() {
   const items = segments.map((segment, index) => {
     const path = '/' + segments.slice(0, index + 1).join('/');
     return {
-      label: getLabel(segment),
+      label: getLabel(segment, segmentLabels),
       path,
       isLast: index === segments.length - 1,
     };
@@ -62,7 +68,7 @@ export function Breadcrumbs() {
             className="flex items-center hover:text-foreground transition-colors"
           >
             <Home className="h-4 w-4" aria-hidden="true" />
-            <span className="sr-only">Home</span>
+            <span className="sr-only">{t('home')}</span>
           </Link>
         </li>
         {items.map((item) => (

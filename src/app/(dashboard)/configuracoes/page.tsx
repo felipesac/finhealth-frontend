@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,7 @@ interface NotificationPreferences {
 }
 
 export default function ConfiguracoesPage() {
+  const t = useTranslations('settings');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -71,20 +73,20 @@ export default function ConfiguracoesPage() {
         body: JSON.stringify(prefs),
       });
       if (!res.ok) throw new Error('Erro ao salvar');
-      toast({ title: 'Preferencias de notificacao atualizadas' });
+      toast({ title: t('notifUpdated') });
     } catch {
-      toast({ title: 'Erro ao salvar notificacoes', variant: 'destructive' });
+      toast({ title: t('notifError'), variant: 'destructive' });
     } finally {
       setSavingNotif(false);
     }
-  }, []);
+  }, [t]);
 
   const subscribePush = useCallback(async () => {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js');
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidKey) {
-        toast({ title: 'Push nao configurado no servidor', variant: 'destructive' });
+        toast({ title: t('pushNotConfigured'), variant: 'destructive' });
         return false;
       }
       const subscription = await registration.pushManager.subscribe({
@@ -98,10 +100,10 @@ export default function ConfiguracoesPage() {
       });
       return true;
     } catch {
-      toast({ title: 'Erro ao ativar notificacoes push', description: 'Verifique as permissoes do navegador', variant: 'destructive' });
+      toast({ title: t('pushError'), description: t('pushErrorDesc'), variant: 'destructive' });
       return false;
     }
-  }, []);
+  }, [t]);
 
   const unsubscribePush = useCallback(async () => {
     try {
@@ -120,12 +122,12 @@ export default function ConfiguracoesPage() {
     if (key === 'push_enabled') {
       if (newValue) {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-          toast({ title: 'Seu navegador nao suporta notificacoes push', variant: 'destructive' });
+          toast({ title: t('pushNotSupported'), variant: 'destructive' });
           return;
         }
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
-          toast({ title: 'Permissao de notificacao negada', variant: 'destructive' });
+          toast({ title: t('pushDenied'), variant: 'destructive' });
           return;
         }
         const subscribed = await subscribePush();
@@ -142,7 +144,7 @@ export default function ConfiguracoesPage() {
 
   const handleSaveTiss = async () => {
     if (cnes && !/^\d{7}$/.test(cnes)) {
-      toast({ title: 'CNES deve ter 7 digitos numericos', variant: 'destructive' });
+      toast({ title: t('cnesValidation'), variant: 'destructive' });
       return;
     }
     setSavingTiss(true);
@@ -153,9 +155,9 @@ export default function ConfiguracoesPage() {
         body: JSON.stringify({ tiss_version: tissVersion, cnes }),
       });
       if (!res.ok) throw new Error('Erro ao salvar');
-      toast({ title: 'Configuracoes TISS/SUS atualizadas' });
+      toast({ title: t('tissUpdated') });
     } catch {
-      toast({ title: 'Erro ao salvar configuracoes TISS', variant: 'destructive' });
+      toast({ title: t('tissError'), variant: 'destructive' });
     } finally {
       setSavingTiss(false);
     }
@@ -169,10 +171,10 @@ export default function ConfiguracoesPage() {
         data: { name },
       });
       if (error) throw error;
-      toast({ title: 'Perfil atualizado com sucesso' });
+      toast({ title: t('profileUpdated') });
     } catch (err: unknown) {
       const error = err as { message?: string };
-      toast({ title: 'Erro ao salvar perfil', description: error.message, variant: 'destructive' });
+      toast({ title: t('profileError'), description: error.message, variant: 'destructive' });
     } finally {
       setSavingProfile(false);
     }
@@ -180,11 +182,11 @@ export default function ConfiguracoesPage() {
 
   const handleChangePassword = async () => {
     if (!currentPassword) {
-      toast({ title: 'Digite a senha atual', variant: 'destructive' });
+      toast({ title: t('enterCurrentPassword'), variant: 'destructive' });
       return;
     }
     if (!newPassword || newPassword.length < 6) {
-      toast({ title: 'A nova senha deve ter pelo menos 6 caracteres', variant: 'destructive' });
+      toast({ title: t('passwordMinLength'), variant: 'destructive' });
       return;
     }
     setChangingPassword(true);
@@ -197,7 +199,7 @@ export default function ConfiguracoesPage() {
         password: currentPassword,
       });
       if (signInError) {
-        toast({ title: 'Senha atual incorreta', variant: 'destructive' });
+        toast({ title: t('wrongPassword'), variant: 'destructive' });
         return;
       }
 
@@ -207,10 +209,10 @@ export default function ConfiguracoesPage() {
       if (error) throw error;
       setCurrentPassword('');
       setNewPassword('');
-      toast({ title: 'Senha alterada com sucesso' });
+      toast({ title: t('passwordChanged') });
     } catch (err: unknown) {
       const error = err as { message?: string };
-      toast({ title: 'Erro ao alterar senha', description: error.message, variant: 'destructive' });
+      toast({ title: t('passwordError'), description: error.message, variant: 'destructive' });
     } finally {
       setChangingPassword(false);
     }
@@ -219,75 +221,75 @@ export default function ConfiguracoesPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Configuracoes</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('title')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Gerencie as configuracoes do sistema
+          {t('description')}
         </p>
       </div>
 
       <div className="grid gap-4 sm:gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Perfil</CardTitle>
+            <CardTitle>{t('profile')}</CardTitle>
             <CardDescription>
-              Atualize suas informacoes pessoais
+              {t('profileDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input id="name" placeholder="Seu nome" value={name} onChange={(e) => setName(e.target.value)} />
+                <Label htmlFor="name">{t('name')}</Label>
+                <Input id="name" placeholder={t('namePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('email')}</Label>
                 <Input id="email" type="email" value={email} disabled />
               </div>
             </div>
             <Button onClick={handleSaveProfile} disabled={savingProfile}>
               {savingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar Alteracoes
+              {t('saveChanges')}
             </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Seguranca</CardTitle>
+            <CardTitle>{t('security')}</CardTitle>
             <CardDescription>
-              Altere sua senha de acesso
+              {t('securityDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="current-password">Senha Atual</Label>
+                <Label htmlFor="current-password">{t('currentPassword')}</Label>
                 <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="new-password">Nova Senha</Label>
+                <Label htmlFor="new-password">{t('newPassword')}</Label>
                 <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
               </div>
             </div>
             <Button onClick={handleChangePassword} disabled={changingPassword}>
               {changingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Alterar Senha
+              {t('changePassword')}
             </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Notificacoes</CardTitle>
+            <CardTitle>{t('notifications')}</CardTitle>
             <CardDescription>
-              Configure quais notificacoes deseja receber
+              {t('notificationsDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="notif-glosas" className="text-sm font-medium">Glosas</Label>
-                <p className="text-xs text-muted-foreground">Alertas sobre novas glosas e recursos</p>
+                <Label htmlFor="notif-glosas" className="text-sm font-medium">{t('notifGlosas')}</Label>
+                <p className="text-xs text-muted-foreground">{t('notifGlosasDesc')}</p>
               </div>
               <Switch
                 id="notif-glosas"
@@ -298,8 +300,8 @@ export default function ConfiguracoesPage() {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="notif-pagamentos" className="text-sm font-medium">Pagamentos</Label>
-                <p className="text-xs text-muted-foreground">Alertas sobre pagamentos recebidos e conciliacao</p>
+                <Label htmlFor="notif-pagamentos" className="text-sm font-medium">{t('notifPayments')}</Label>
+                <p className="text-xs text-muted-foreground">{t('notifPaymentsDesc')}</p>
               </div>
               <Switch
                 id="notif-pagamentos"
@@ -310,8 +312,8 @@ export default function ConfiguracoesPage() {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="notif-contas" className="text-sm font-medium">Contas Medicas</Label>
-                <p className="text-xs text-muted-foreground">Alertas sobre mudancas de status nas contas</p>
+                <Label htmlFor="notif-contas" className="text-sm font-medium">{t('notifAccounts')}</Label>
+                <p className="text-xs text-muted-foreground">{t('notifAccountsDesc')}</p>
               </div>
               <Switch
                 id="notif-contas"
@@ -322,8 +324,8 @@ export default function ConfiguracoesPage() {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="notif-push" className="text-sm font-medium">Notificacoes push</Label>
-                <p className="text-xs text-muted-foreground">Receba notificacoes em tempo real no navegador</p>
+                <Label htmlFor="notif-push" className="text-sm font-medium">{t('notifPush')}</Label>
+                <p className="text-xs text-muted-foreground">{t('notifPushDesc')}</p>
               </div>
               <Switch
                 id="notif-push"
@@ -337,25 +339,25 @@ export default function ConfiguracoesPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>TISS / SUS</CardTitle>
+            <CardTitle>{t('tissSus')}</CardTitle>
             <CardDescription>
-              Configuracoes do padrao TISS e identificacao SUS
+              {t('tissSusDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="tiss-version">Versao TISS</Label>
+                <Label htmlFor="tiss-version">{t('tissVersion')}</Label>
                 <Input
                   id="tiss-version"
                   value={tissVersion}
                   onChange={(e) => setTissVersion(e.target.value)}
                   placeholder="3.05.00"
                 />
-                <p className="text-xs text-muted-foreground">Versao do padrao TISS em uso (ex: 3.05.00, 4.00.00)</p>
+                <p className="text-xs text-muted-foreground">{t('tissVersionHelp')}</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cnes">CNES Padrao</Label>
+                <Label htmlFor="cnes">{t('cnes')}</Label>
                 <Input
                   id="cnes"
                   value={cnes}
@@ -363,12 +365,12 @@ export default function ConfiguracoesPage() {
                   placeholder="0000000"
                   maxLength={7}
                 />
-                <p className="text-xs text-muted-foreground">Codigo CNES do estabelecimento (7 digitos)</p>
+                <p className="text-xs text-muted-foreground">{t('cnesHelp')}</p>
               </div>
             </div>
             <Button onClick={handleSaveTiss} disabled={savingTiss}>
               {savingTiss && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar Configuracoes TISS
+              {t('saveTissConfig')}
             </Button>
           </CardContent>
         </Card>

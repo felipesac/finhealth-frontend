@@ -12,6 +12,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import dynamic from 'next/dynamic';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
+import { useTranslations } from 'next-intl';
 
 const MobileBottomNav = dynamic(
   () => import('./MobileBottomNav').then((m) => ({ default: m.MobileBottomNav })),
@@ -28,6 +29,8 @@ export function AppShell({ children, userEmail }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { sidebarCollapsed } = useUIStore();
   const pathname = usePathname();
+  const t = useTranslations('common');
+  const tNav = useTranslations('nav');
   useKeyboardShortcuts();
 
   useEffect(() => {
@@ -57,7 +60,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
       href="#main-content"
       className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
     >
-      Pular para o conteúdo principal
+      {t('skipToContent')}
     </a>
     <div className="flex h-screen bg-background">
       {/* Desktop sidebar */}
@@ -73,7 +76,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
               FinHealth
             </span>
           </div>
-          <nav className="space-y-0.5 px-3 py-3" aria-label="Navegacao principal">
+          <nav className="space-y-0.5 px-3 py-3" aria-label={tNav('mainNav')}>
             {navItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               const Icon = item.icon;
@@ -93,7 +96,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
                     aria-current={isActive ? 'page' : undefined}
                   >
                     <Icon className="h-[1.125rem] w-[1.125rem] flex-shrink-0" aria-hidden="true" />
-                    <span>{item.label}</span>
+                    <span>{tNav(item.labelKey)}</span>
                   </Link>
                   {hasSubItems && isActive && (
                     <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border/50 pl-3">
@@ -109,7 +112,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
                               : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                           )}
                         >
-                          {sub.label}
+                          {tNav(sub.labelKey)}
                         </Link>
                       ))}
                     </div>

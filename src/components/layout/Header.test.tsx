@@ -33,18 +33,18 @@ describe('Header', () => {
 
   it('renders system title', () => {
     render(<Header userEmail="user@test.com" />);
-    expect(screen.getByText('Sistema de Gestao Financeira')).toBeInTheDocument();
+    expect(screen.getByText('Sistema de Gestao Financeira')).toBeInTheDocument();  // from header.systemName
   });
 
   it('renders mobile menu button', () => {
     render(<Header userEmail="user@test.com" />);
-    expect(screen.getByLabelText('Abrir menu')).toBeInTheDocument();
+    expect(screen.getByLabelText('Abrir menu')).toBeInTheDocument();  // from header.openMenu
   });
 
   it('calls onMobileMenuToggle on menu button click', () => {
     const onToggle = vi.fn();
     render(<Header userEmail="user@test.com" onMobileMenuToggle={onToggle} />);
-    fireEvent.click(screen.getByLabelText('Abrir menu'));
+    fireEvent.click(screen.getByLabelText('Abrir menu'));  // from header.openMenu
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
@@ -65,7 +65,7 @@ describe('Header', () => {
 
   it('renders user menu button', () => {
     render(<Header userEmail="user@test.com" />);
-    expect(screen.getByLabelText('Menu do usuario')).toBeInTheDocument();
+    expect(screen.getByLabelText('Menu do usuario')).toBeInTheDocument();  // from header.userMenu
   });
 
   it('shows default initials when no email', () => {

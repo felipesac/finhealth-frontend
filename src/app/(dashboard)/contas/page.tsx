@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { AccountsTable, AccountFilters } from '@/components/accounts';
 import { Pagination } from '@/components/ui/pagination';
@@ -69,6 +70,7 @@ async function getAccountsData(page: number, filters: {
 }
 
 export default async function ContasPage({ searchParams }: PageProps) {
+  const t = await getTranslations('accounts');
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || '1', 10));
   const filters = {
@@ -82,14 +84,14 @@ export default async function ContasPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Contas Medicas</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('title')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Gerencie as contas medicas e guias TISS
+          {t('description')}
         </p>
       </div>
 
       <AccountFilters insurers={insurers} />
-      <ErrorBoundary fallbackMessage="Erro ao carregar tabela de contas.">
+      <ErrorBoundary fallbackMessage={t('errorLoading')}>
         <AccountsTable accounts={accounts} />
       </ErrorBoundary>
       <Pagination total={total} pageSize={PAGE_SIZE} currentPage={page} />

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
+import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { MetricsGrid, RecentAccounts } from '@/components/dashboard';
 import { RealtimeDashboard } from '@/components/dashboard/RealtimeDashboard';
@@ -33,6 +34,7 @@ export const metadata: Metadata = {
 };
 
 async function getDashboardData() {
+  const t = await getTranslations('dashboard');
   const supabase = await createClient();
 
   // Fetch all data in parallel
@@ -60,7 +62,7 @@ async function getDashboardData() {
   if (accountsRes.error || glosasRes.error || paymentsRes.error || recentAccountsRes.error) {
     const errorMsg = accountsRes.error?.message || glosasRes.error?.message ||
       paymentsRes.error?.message || recentAccountsRes.error?.message;
-    throw new Error(errorMsg || 'Erro ao carregar dados do dashboard');
+    throw new Error(errorMsg || t('errorData'));
   }
 
   const accountsList = accountsRes.data || [];
@@ -108,12 +110,12 @@ async function getDashboardData() {
 
   // Account status distribution
   const statusLabels: Record<string, string> = {
-    pending: 'Pendente',
-    validated: 'Validado',
-    sent: 'Enviado',
-    paid: 'Pago',
-    glosa: 'Glosado',
-    appeal: 'Em Recurso',
+    pending: t('statusLabels.pending'),
+    validated: t('statusLabels.validated'),
+    sent: t('statusLabels.sent'),
+    paid: t('statusLabels.paid'),
+    glosa: t('statusLabels.glosa'),
+    appeal: t('statusLabels.appeal'),
   };
   const statusCounts: Record<string, number> = {};
   accountsList.forEach((a) => {
@@ -147,6 +149,7 @@ async function getDashboardData() {
 }
 
 export default async function DashboardPage() {
+  const t = await getTranslations('dashboard');
   const { metrics, recentAccounts, paymentChartData, accountStatusData, glosasTrendData } = await getDashboardData();
 
   return (
@@ -154,9 +157,9 @@ export default async function DashboardPage() {
       <div className="space-y-6 sm:space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dashboard</h1>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('title')}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Visao geral do faturamento hospitalar
+              {t('description')}
             </p>
           </div>
           <DashboardCustomizer />
@@ -165,12 +168,12 @@ export default async function DashboardPage() {
         <DashboardWidgets
           widgetMap={{
             'metrics': (
-              <ErrorBoundary fallbackMessage="Erro ao carregar metricas.">
+              <ErrorBoundary fallbackMessage={t('errorMetrics')}>
                 <MetricsGrid metrics={metrics} />
               </ErrorBoundary>
             ),
             'charts': (
-              <ErrorBoundary fallbackMessage="Erro ao carregar graficos.">
+              <ErrorBoundary fallbackMessage={t('errorCharts')}>
                 <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                   <PaymentsChart data={paymentChartData} />
                   <AccountsStatusChart data={accountStatusData} />
@@ -178,7 +181,7 @@ export default async function DashboardPage() {
               </ErrorBoundary>
             ),
             'glosas-chart': (
-              <ErrorBoundary fallbackMessage="Erro ao carregar graficos de glosas.">
+              <ErrorBoundary fallbackMessage={t('errorGlosasCharts')}>
                 <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                   <GlosasChart data={metrics.glosasBreakdown} />
                   <GlosasTrendMini data={glosasTrendData} />
@@ -186,7 +189,7 @@ export default async function DashboardPage() {
               </ErrorBoundary>
             ),
             'recent-accounts': (
-              <ErrorBoundary fallbackMessage="Erro ao carregar contas recentes.">
+              <ErrorBoundary fallbackMessage={t('errorRecentAccounts')}>
                 <RecentAccounts accounts={recentAccounts} />
               </ErrorBoundary>
             ),

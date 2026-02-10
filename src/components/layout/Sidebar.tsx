@@ -17,85 +17,86 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { LucideIcon } from 'lucide-react';
 
 interface SubItem {
   href: string;
-  label: string;
+  labelKey: string;
 }
 
 interface NavItem {
   href: string;
-  label: string;
+  labelKey: string;
   icon: LucideIcon;
   subItems?: SubItem[];
 }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', labelKey: 'dashboard', icon: LayoutDashboard },
   {
     href: '/contas',
-    label: 'Contas Medicas',
+    labelKey: 'accounts',
     icon: FileText,
     subItems: [
-      { href: '/contas', label: 'Listagem' },
-      { href: '/contas/nova', label: 'Nova Conta' },
+      { href: '/contas', labelKey: 'accountsList' },
+      { href: '/contas/nova', labelKey: 'newAccount' },
     ],
   },
   {
     href: '/glosas',
-    label: 'Glosas',
+    labelKey: 'glosas',
     icon: AlertCircle,
     subItems: [
-      { href: '/glosas', label: 'Painel' },
-      { href: '/glosas/operadora', label: 'Por Operadora' },
-      { href: '/glosas/faturamento', label: 'Faturamento' },
+      { href: '/glosas', labelKey: 'panel' },
+      { href: '/glosas/operadora', labelKey: 'byInsurer' },
+      { href: '/glosas/faturamento', labelKey: 'billing' },
     ],
   },
   {
     href: '/pagamentos',
-    label: 'Pagamentos',
+    labelKey: 'payments',
     icon: CreditCard,
     subItems: [
-      { href: '/pagamentos', label: 'Painel' },
-      { href: '/pagamentos/conciliacao', label: 'Conciliacao' },
-      { href: '/pagamentos/inadimplencia', label: 'Inadimplencia' },
+      { href: '/pagamentos', labelKey: 'panel' },
+      { href: '/pagamentos/conciliacao', labelKey: 'reconciliation' },
+      { href: '/pagamentos/inadimplencia', labelKey: 'delinquency' },
     ],
   },
   {
     href: '/tiss',
-    label: 'TISS',
+    labelKey: 'tiss',
     icon: Upload,
     subItems: [
-      { href: '/tiss', label: 'Guias' },
-      { href: '/tiss/upload', label: 'Upload' },
-      { href: '/tiss/validacao', label: 'Validacao' },
-      { href: '/tiss/lotes', label: 'Lotes' },
-      { href: '/tiss/certificados', label: 'Certificados' },
+      { href: '/tiss', labelKey: 'guides' },
+      { href: '/tiss/upload', labelKey: 'upload' },
+      { href: '/tiss/validacao', labelKey: 'validation' },
+      { href: '/tiss/lotes', labelKey: 'batches' },
+      { href: '/tiss/certificados', labelKey: 'certificates' },
     ],
   },
   {
     href: '/sus',
-    label: 'SUS',
+    labelKey: 'sus',
     icon: Building2,
     subItems: [
-      { href: '/sus/bpa', label: 'BPA' },
-      { href: '/sus/aih', label: 'AIH' },
-      { href: '/sus/sigtap', label: 'SIGTAP' },
-      { href: '/sus/remessa', label: 'Remessa' },
+      { href: '/sus/bpa', labelKey: 'bpa' },
+      { href: '/sus/aih', labelKey: 'aih' },
+      { href: '/sus/sigtap', labelKey: 'sigtap' },
+      { href: '/sus/remessa', labelKey: 'remessa' },
     ],
   },
-  { href: '/relatorios', label: 'Relatorios', icon: BarChart3 },
+  { href: '/relatorios', labelKey: 'reports', icon: BarChart3 },
   {
     href: '/configuracoes',
-    label: 'Configuracoes',
+    labelKey: 'settings',
     icon: Settings,
     subItems: [
-      { href: '/configuracoes', label: 'Geral' },
-      { href: '/configuracoes/usuarios', label: 'Usuarios' },
-      { href: '/configuracoes/operadoras', label: 'Operadoras' },
-      { href: '/configuracoes/pacientes', label: 'Pacientes' },
-      { href: '/configuracoes/auditoria', label: 'Auditoria' },
+      { href: '/configuracoes', labelKey: 'general' },
+      { href: '/configuracoes/usuarios', labelKey: 'users' },
+      { href: '/configuracoes/operadoras', labelKey: 'insurers' },
+      { href: '/configuracoes/pacientes', labelKey: 'patients' },
+      { href: '/configuracoes/auditoria', labelKey: 'audit' },
     ],
   },
 ];
@@ -107,6 +108,8 @@ interface SidebarProps {
 export function Sidebar({ onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const t = useTranslations('nav');
+  const ts = useTranslations('sidebar');
   const [expandedItems, setExpandedItems] = useState<string[]>(() => {
     // Auto-expand if currently on a sub-route
     return navItems
@@ -140,7 +143,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             'rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
             sidebarCollapsed && 'mx-auto'
           )}
-          aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
+          aria-label={sidebarCollapsed ? ts('expand') : ts('collapse')}
         >
           <ChevronLeft
             className={cn(
@@ -152,7 +155,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2" aria-label="Navegacao principal">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2" aria-label={t('mainNav')}>
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -172,7 +175,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                   )}
                 >
                   <Icon className="h-[1.125rem] w-[1.125rem] flex-shrink-0" aria-hidden="true" />
-                  <span className="flex-1 text-left">{item.label}</span>
+                  <span className="flex-1 text-left">{t(item.labelKey)}</span>
                   <ChevronDown
                     className={cn(
                       'h-3.5 w-3.5 transition-transform duration-200',
@@ -197,7 +200,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                           )}
                           aria-current={isSubActive ? 'page' : undefined}
                         >
-                          {sub.label}
+                          {t(sub.labelKey)}
                         </Link>
                       );
                     })}
@@ -219,11 +222,11 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                 sidebarCollapsed && 'justify-center px-2'
               )}
-              title={sidebarCollapsed ? item.label : undefined}
+              title={sidebarCollapsed ? t(item.labelKey) : undefined}
               aria-current={isActive ? 'page' : undefined}
             >
               <Icon className="h-[1.125rem] w-[1.125rem] flex-shrink-0" aria-hidden="true" />
-              {!sidebarCollapsed && <span>{item.label}</span>}
+              {!sidebarCollapsed && <span>{t(item.labelKey)}</span>}
             </Link>
           );
         })}

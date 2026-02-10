@@ -24,14 +24,14 @@ describe('Breadcrumbs', () => {
     mockUsePathname.mockReturnValue('/contas/nova');
     render(<Breadcrumbs />);
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument();
-    expect(screen.getByText('Home')).toBeInTheDocument();
+    expect(screen.getByText('Home', { selector: '.sr-only' })).toBeInTheDocument();
     expect(screen.getByText('Nova Conta')).toBeInTheDocument();
   });
 
   it('shows "Contas Médicas" segment label for contas', () => {
     mockUsePathname.mockReturnValue('/contas/nova');
     render(<Breadcrumbs />);
-    expect(screen.getByText('Contas Médicas')).toBeInTheDocument();
+    expect(screen.getByText('Contas Medicas')).toBeInTheDocument();
   });
 
   it('last segment has aria-current="page"', () => {

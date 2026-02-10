@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/formatters';
 import {
@@ -17,44 +18,46 @@ interface MetricsGridProps {
 }
 
 function MetricsGridInner({ metrics }: MetricsGridProps) {
+  const t = useTranslations('dashboard');
+
   const cards = [
     {
-      title: 'Faturamento Total',
+      title: t('totalBilling'),
       value: formatCurrency(metrics.totalBilling),
       icon: DollarSign,
-      description: 'Total faturado',
+      description: t('totalBillingDesc'),
       iconBg: 'bg-emerald-50 dark:bg-emerald-950/50',
       iconColor: 'text-emerald-600 dark:text-emerald-400',
     },
     {
-      title: 'Total em Glosas',
+      title: t('totalGlosasTitle'),
       value: formatCurrency(metrics.totalGlosas),
       icon: AlertTriangle,
-      description: 'Valor glosado',
+      description: t('totalGlosasDesc'),
       iconBg: 'bg-red-50 dark:bg-red-950/50',
       iconColor: 'text-red-600 dark:text-red-400',
     },
     {
-      title: 'Pagamentos',
+      title: t('totalPayments'),
       value: formatCurrency(metrics.totalPayments),
       icon: CreditCard,
-      description: 'Total recebido',
+      description: t('totalPaymentsDesc'),
       iconBg: 'bg-blue-50 dark:bg-blue-950/50',
       iconColor: 'text-blue-600 dark:text-blue-400',
     },
     {
-      title: 'Contas Pendentes',
+      title: t('pendingAccounts'),
       value: metrics.pendingAccounts.toString(),
       icon: Clock,
-      description: 'Aguardando',
+      description: t('pendingAccountsDesc'),
       iconBg: 'bg-amber-50 dark:bg-amber-950/50',
       iconColor: 'text-amber-600 dark:text-amber-400',
     },
     {
-      title: 'Taxa de Sucesso',
+      title: t('successRate'),
       value: `${metrics.appealSuccessRate.toFixed(1)}%`,
       icon: TrendingUp,
-      description: 'Em recursos',
+      description: t('successRateDesc'),
       iconBg: 'bg-violet-50 dark:bg-violet-950/50',
       iconColor: 'text-violet-600 dark:text-violet-400',
     },

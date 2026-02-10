@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PaymentsTable } from '@/components/payments/PaymentsTable';
@@ -65,6 +66,7 @@ async function getPaymentsData(page: number, search: string, status: string, ins
 }
 
 export default async function PagamentosPage({ searchParams }: PageProps) {
+  const t = await getTranslations('payments');
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || '1', 10));
   const search = params.search || '';
@@ -82,9 +84,9 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Pagamentos</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('title')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Gestao de pagamentos recebidos e conciliacao bancaria
+          {t('description')}
         </p>
       </div>
 
@@ -93,7 +95,7 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Recebido</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('totalReceived')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(metrics.totalReceived)}</div>
@@ -101,7 +103,7 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Conciliado</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('matched')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatCurrency(metrics.totalMatched)}</div>
@@ -109,7 +111,7 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Diferenca</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('difference')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{formatCurrency(metrics.totalUnmatched)}</div>
@@ -117,18 +119,18 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('pending')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{metrics.pendingCount}</div>
-            <p className="text-xs text-muted-foreground">pagamentos para conciliar</p>
+            <p className="text-xs text-muted-foreground">{t('paymentsToReconcile')}</p>
           </CardContent>
         </Card>
       </div>
 
       <PaymentUpload insurers={(insurersList || []) as { id: string; name: string }[]} />
 
-      <ErrorBoundary fallbackMessage="Erro ao carregar tabela de pagamentos.">
+      <ErrorBoundary fallbackMessage={t('errorLoading')}>
         <PaymentsTable payments={payments} />
       </ErrorBoundary>
       <Pagination total={total} pageSize={PAGE_SIZE} currentPage={page} />

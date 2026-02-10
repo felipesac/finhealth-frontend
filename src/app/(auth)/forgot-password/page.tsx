@@ -1,6 +1,9 @@
+import { getTranslations } from 'next-intl/server';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage() {
+  const t = await getTranslations('auth');
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-[420px] space-y-8">
@@ -9,7 +12,7 @@ export default function ForgotPasswordPage() {
             FinHealth
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Sistema de Gestao Financeira Hospitalar
+            {t('systemDescription')}
           </p>
         </div>
         <ForgotPasswordForm />
