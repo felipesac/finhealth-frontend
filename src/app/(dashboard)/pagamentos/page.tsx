@@ -5,6 +5,7 @@ import { PaymentsTable } from '@/components/payments/PaymentsTable';
 import { PaymentFilters } from '@/components/payments/PaymentFilters';
 import { PaymentUpload } from '@/components/payments/PaymentUpload';
 import { Pagination } from '@/components/ui/pagination';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { formatCurrency } from '@/lib/formatters';
 import type { Payment, HealthInsurer } from '@/types';
 
@@ -127,7 +128,9 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
 
       <PaymentUpload insurers={(insurersList || []) as { id: string; name: string }[]} />
 
-      <PaymentsTable payments={payments} />
+      <ErrorBoundary fallbackMessage="Erro ao carregar tabela de pagamentos.">
+        <PaymentsTable payments={payments} />
+      </ErrorBoundary>
       <Pagination total={total} pageSize={PAGE_SIZE} currentPage={page} />
     </div>
   );

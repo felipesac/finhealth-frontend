@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { ArrowLeft } from 'lucide-react';
 import { CreateAccountForm } from '@/components/accounts/CreateAccountForm';
 
@@ -51,7 +52,9 @@ export default async function NovaContaPage() {
         </div>
       </div>
 
-      <CreateAccountForm patients={patients} insurers={insurers} />
+      <ErrorBoundary fallbackMessage="Erro ao carregar formulario.">
+        <CreateAccountForm patients={patients} insurers={insurers} />
+      </ErrorBoundary>
     </div>
   );
 }

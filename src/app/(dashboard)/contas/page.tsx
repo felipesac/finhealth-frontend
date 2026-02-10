@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { AccountsTable, AccountFilters } from '@/components/accounts';
 import { Pagination } from '@/components/ui/pagination';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { MedicalAccount, HealthInsurer } from '@/types';
 
 export const metadata: Metadata = {
@@ -88,7 +89,9 @@ export default async function ContasPage({ searchParams }: PageProps) {
       </div>
 
       <AccountFilters insurers={insurers} />
-      <AccountsTable accounts={accounts} />
+      <ErrorBoundary fallbackMessage="Erro ao carregar tabela de contas.">
+        <AccountsTable accounts={accounts} />
+      </ErrorBoundary>
       <Pagination total={total} pageSize={PAGE_SIZE} currentPage={page} />
     </div>
   );

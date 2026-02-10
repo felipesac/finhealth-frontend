@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { AppealForm } from '@/components/glosas/AppealForm';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { Glosa, AppealStatus, GlosaType } from '@/types';
 
 interface PageProps {
@@ -164,11 +165,13 @@ export default async function GlosaDetailPage({ params }: PageProps) {
         </Card>
       )}
 
-      <AppealForm
-        glosaId={glosa.id}
-        initialText={glosa.appeal_text || glosa.ai_recommendation || ''}
-        appealStatus={glosa.appeal_status}
-      />
+      <ErrorBoundary fallbackMessage="Erro ao carregar formulario de recurso.">
+        <AppealForm
+          glosaId={glosa.id}
+          initialText={glosa.appeal_text || glosa.ai_recommendation || ''}
+          appealStatus={glosa.appeal_status}
+        />
+      </ErrorBoundary>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { PaymentsChart } from '@/components/dashboard/PaymentsChart';
 import { AccountsStatusChart } from '@/components/dashboard/AccountsStatusChart';
 import { GlosasTrendMini } from '@/components/dashboard/GlosasTrendMini';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { DashboardMetrics, MedicalAccount } from '@/types';
 
 export const metadata: Metadata = {
@@ -147,20 +148,32 @@ export default async function DashboardPage() {
 
         <DashboardWidgets
           widgetMap={{
-            'metrics': <MetricsGrid metrics={metrics} />,
+            'metrics': (
+              <ErrorBoundary fallbackMessage="Erro ao carregar metricas.">
+                <MetricsGrid metrics={metrics} />
+              </ErrorBoundary>
+            ),
             'charts': (
-              <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-                <PaymentsChart data={paymentChartData} />
-                <AccountsStatusChart data={accountStatusData} />
-              </div>
+              <ErrorBoundary fallbackMessage="Erro ao carregar graficos.">
+                <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+                  <PaymentsChart data={paymentChartData} />
+                  <AccountsStatusChart data={accountStatusData} />
+                </div>
+              </ErrorBoundary>
             ),
             'glosas-chart': (
-              <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-                <GlosasChart data={metrics.glosasBreakdown} />
-                <GlosasTrendMini data={glosasTrendData} />
-              </div>
+              <ErrorBoundary fallbackMessage="Erro ao carregar graficos de glosas.">
+                <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+                  <GlosasChart data={metrics.glosasBreakdown} />
+                  <GlosasTrendMini data={glosasTrendData} />
+                </div>
+              </ErrorBoundary>
             ),
-            'recent-accounts': <RecentAccounts accounts={recentAccounts} />,
+            'recent-accounts': (
+              <ErrorBoundary fallbackMessage="Erro ao carregar contas recentes.">
+                <RecentAccounts accounts={recentAccounts} />
+              </ErrorBoundary>
+            ),
             'quick-actions': <QuickActions />,
           }}
         />

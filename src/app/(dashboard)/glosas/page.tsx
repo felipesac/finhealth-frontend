@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GlosasTable } from '@/components/glosas';
 import { GlosaFilters } from '@/components/glosas/GlosaFilters';
 import { Pagination } from '@/components/ui/pagination';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { Glosa } from '@/types';
 
 export const metadata: Metadata = {
@@ -104,7 +105,9 @@ export default async function GlosasPage({ searchParams }: PageProps) {
         </TabsList>
 
         <TabsContent value={tab} forceMount>
-          <GlosasTable glosas={glosas} />
+          <ErrorBoundary fallbackMessage="Erro ao carregar tabela de glosas.">
+            <GlosasTable glosas={glosas} />
+          </ErrorBoundary>
         </TabsContent>
       </Tabs>
 
