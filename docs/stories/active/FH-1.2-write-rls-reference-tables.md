@@ -4,7 +4,7 @@
 **Sprint:** 1 — Security Hardening
 **Points:** 3
 **Priority:** Critical
-**Status:** Pending
+**Status:** Done
 **Agent:** @data-engineer
 
 ---
@@ -17,15 +17,15 @@ Currently, API routes use `createClient()` from `@supabase/ssr` which operates a
 
 ## Acceptance Criteria
 
-- [ ] Add INSERT policy for `patients`: admin and finance_manager roles can insert
-- [ ] Add UPDATE policy for `patients`: admin and finance_manager roles can update
-- [ ] Add DELETE policy for `patients`: admin only
-- [ ] Add INSERT policy for `health_insurers`: admin only
-- [ ] Add UPDATE policy for `health_insurers`: admin only
-- [ ] Add DELETE policy for `health_insurers`: admin only
-- [ ] Write migration file `009_write_rls_reference_tables.sql`
-- [ ] Verify CRUD operations work via API routes for authorized roles
-- [ ] Verify unauthorized roles get 403/RLS denial
+- [x] Add INSERT policy for `patients`: admin and finance_manager roles can insert
+- [x] Add UPDATE policy for `patients`: admin and finance_manager roles can update
+- [x] Add DELETE policy for `patients`: admin only
+- [x] Add INSERT policy for `health_insurers`: admin only
+- [x] Add UPDATE policy for `health_insurers`: admin only
+- [x] Add DELETE policy for `health_insurers`: admin only
+- [x] Write migration file `009_write_rls_reference_tables.sql`
+- [x] Verify CRUD operations work via API routes for authorized roles
+- [x] Verify unauthorized roles get 403/RLS denial
 
 ## Technical Notes
 
@@ -41,8 +41,8 @@ Currently, API routes use `createClient()` from `@supabase/ssr` which operates a
 
 ## Definition of Done
 
-- [ ] Migration applied successfully
-- [ ] Admin can CRUD both tables
-- [ ] Finance manager can CRUD patients, read-only health_insurers
-- [ ] Auditor gets RLS denial on writes
-- [ ] All tests pass
+- [x] Migration applied successfully
+- [x] Admin can CRUD both tables
+- [x] Finance manager can CRUD patients, read-only health_insurers
+- [x] Auditor gets RLS denial on writes
+- [x] All tests pass
