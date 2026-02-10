@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Bell, Check, AlertCircle, Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { formatRelative } from '@/lib/formatters';
+import { useSWRFetch } from '@/hooks/useSWRFetch';
 
 interface Notification {
   id: string;
@@ -24,6 +24,11 @@ interface Notification {
   created_at: string;
 }
 
+interface NotificationsResponse {
+  data: Notification[];
+  unreadCount: number;
+}
+
 const typeIcons = {
   info: Info,
   warning: AlertTriangle,
@@ -32,48 +37,38 @@ const typeIcons = {
 };
 
 export function NotificationDropdown() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
+  const { data, mutate } = useSWRFetch<NotificationsResponse>('/api/notifications', {
+    refreshInterval: 60000,
+  });
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const res = await fetch('/api/notifications');
-      if (!res.ok) return;
-      const data = await res.json();
-      setNotifications(data.data || []);
-      setUnreadCount(data.unreadCount || 0);
-    } catch {
-      // silently fail
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  const notifications = data?.data ?? [];
+  const unreadCount = data?.unreadCount ?? 0;
 
   const markAsRead = async (id: string) => {
+    mutate(
+      { data: notifications.map((n) => (n.id === id ? { ...n, read: true } : n)), unreadCount: Math.max(0, unreadCount - 1) },
+      false,
+    );
     await fetch('/api/notifications', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-    setUnreadCount((c) => Math.max(0, c - 1));
+    mutate();
   };
 
   const markAllRead = async () => {
+    mutate(
+      { data: notifications.map((n) => ({ ...n, read: true })), unreadCount: 0 },
+      false,
+    );
     await fetch('/api/notifications', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ markAllRead: true }),
     });
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    setUnreadCount(0);
+    mutate();
   };
 
   const handleClick = (notification: Notification) => {

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { NotificationDropdown } from './NotificationDropdown';
 
 const mockPush = vi.fn();
+const mockMutate = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
@@ -12,6 +13,13 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/formatters', () => ({
   formatRelative: () => 'ha 5 minutos',
 }));
+
+vi.mock('@/hooks/useSWRFetch', () => ({
+  useSWRFetch: vi.fn(),
+}));
+
+import { useSWRFetch } from '@/hooks/useSWRFetch';
+const mockUseSWRFetch = vi.mocked(useSWRFetch);
 
 const mockNotifications = [
   {
@@ -37,41 +45,28 @@ const mockNotifications = [
 describe('NotificationDropdown', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ data: mockNotifications, unreadCount: 1 }),
-    });
+    mockUseSWRFetch.mockReturnValue({
+      data: { data: mockNotifications, unreadCount: 1 },
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: mockMutate,
+    } as ReturnType<typeof useSWRFetch>);
   });
 
-  it('renders notification bell button', async () => {
+  it('renders notification bell button', () => {
     render(<NotificationDropdown />);
     expect(screen.getByLabelText(/Notificacoes/)).toBeInTheDocument();
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalled();
-    });
   });
 
-  it('fetches notifications on mount', async () => {
+  it('displays unread badge count', () => {
     render(<NotificationDropdown />);
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/notifications');
-    });
-  });
-
-  it('displays unread badge count', async () => {
-    render(<NotificationDropdown />);
-    await waitFor(() => {
-      expect(screen.getByText('1')).toBeInTheDocument();
-    });
+    expect(screen.getByText('1')).toBeInTheDocument();
   });
 
   it('opens dropdown and shows notifications', async () => {
     const user = userEvent.setup();
     render(<NotificationDropdown />);
-
-    await waitFor(() => {
-      expect(screen.getByText('1')).toBeInTheDocument();
-    });
 
     await user.click(screen.getByLabelText(/Notificacoes/));
 
@@ -82,10 +77,13 @@ describe('NotificationDropdown', () => {
   });
 
   it('shows empty state when no notifications', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ data: [], unreadCount: 0 }),
-    });
+    mockUseSWRFetch.mockReturnValue({
+      data: { data: [], unreadCount: 0 },
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: mockMutate,
+    } as ReturnType<typeof useSWRFetch>);
 
     const user = userEvent.setup();
     render(<NotificationDropdown />);
@@ -94,6 +92,30 @@ describe('NotificationDropdown', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Nenhuma notificacao')).toBeInTheDocument();
+    });
+  });
+
+  it('calls mutate after marking a notification as read', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true });
+    const user = userEvent.setup();
+    render(<NotificationDropdown />);
+
+    await user.click(screen.getByLabelText(/Notificacoes/));
+    await waitFor(() => {
+      expect(screen.getByText('Nova glosa detectada')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Nova glosa detectada'));
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalled();
+    });
+  });
+
+  it('uses SWR with refreshInterval for polling', () => {
+    render(<NotificationDropdown />);
+    expect(mockUseSWRFetch).toHaveBeenCalledWith('/api/notifications', {
+      refreshInterval: 60000,
     });
   });
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, Shield } from 'lucide-react';
+import { useSWRFetch } from '@/hooks/useSWRFetch';
 
 interface UserProfile {
   id: string;
@@ -41,6 +42,11 @@ const roleLabels: Record<string, string> = {
   tiss_operator: 'Operador TISS',
 };
 
+interface UsersResponse {
+  success: boolean;
+  data: UserProfile[];
+}
+
 const roleVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   admin: 'destructive',
   finance_manager: 'default',
@@ -49,8 +55,6 @@ const roleVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'ou
 };
 
 export function UserManagement() {
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
@@ -59,23 +63,8 @@ export function UserManagement() {
   const [editingRole, setEditingRole] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchUsers = useCallback(async () => {
-    try {
-      const res = await fetch('/api/users');
-      const json = await res.json();
-      if (json.success) {
-        setUsers(json.data);
-      }
-    } catch {
-      toast({ title: 'Erro ao carregar usuarios', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+  const { data, isLoading: loading, mutate } = useSWRFetch<UsersResponse>('/api/users');
+  const users = data?.data ?? [];
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +84,7 @@ export function UserManagement() {
         setInviteEmail('');
         setInviteName('');
         setInviteRole('finance_manager');
-        fetchUsers();
+        mutate();
       } else {
         toast({ title: json.error || 'Erro ao convidar usuario', variant: 'destructive' });
       }
@@ -118,7 +107,7 @@ export function UserManagement() {
       if (json.success) {
         toast({ title: 'Perfil atualizado com sucesso' });
         setEditingRole(null);
-        fetchUsers();
+        mutate();
       } else {
         toast({ title: json.error || 'Erro ao atualizar perfil', variant: 'destructive' });
       }
@@ -136,7 +125,7 @@ export function UserManagement() {
 
       if (json.success) {
         toast({ title: 'Usuario desativado' });
-        fetchUsers();
+        mutate();
       } else {
         toast({ title: json.error || 'Erro ao desativar usuario', variant: 'destructive' });
       }
