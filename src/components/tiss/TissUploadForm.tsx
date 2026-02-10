@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useDropzone } from 'react-dropzone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,11 +15,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
 import { Upload, FileText, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+const tissFormSchema = z.object({
+  accountId: z.string().min(1, 'Selecione uma conta medica'),
+});
+
+type TissFormValues = z.infer<typeof tissFormSchema>;
 
 interface ValidationResult {
   isValid: boolean;
@@ -46,11 +56,15 @@ function readFileAsText(file: File): Promise<string> {
 
 export function TissUploadForm({ accounts }: TissUploadFormProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const form = useForm<TissFormValues>({
+    resolver: zodResolver(tissFormSchema),
+    defaultValues: { accountId: '' },
+  });
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const xmlFile = acceptedFiles[0];
@@ -85,8 +99,10 @@ export function TissUploadForm({ accounts }: TissUploadFormProps) {
   });
 
   const handleUpload = async () => {
-    if (!file || !selectedAccountId) return;
+    const isValid = await form.trigger('accountId');
+    if (!isValid || !file) return;
 
+    const selectedAccountId = form.getValues('accountId');
     setUploading(true);
     setProgress(0);
     setValidationResult(null);
@@ -131,7 +147,7 @@ export function TissUploadForm({ accounts }: TissUploadFormProps) {
     }
   };
 
-  const canSubmit = file && selectedAccountId && !uploading;
+  const canSubmit = file && form.getValues('accountId') && !uploading;
 
   return (
     <Card>
@@ -142,21 +158,32 @@ export function TissUploadForm({ accounts }: TissUploadFormProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <label className="mb-2 block text-sm font-medium">Conta Medica</label>
-          <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a conta medica" />
-            </SelectTrigger>
-            <SelectContent>
-              {accounts.map((account) => (
-                <SelectItem key={account.id} value={account.id}>
-                  {account.account_number} — {account.patient_name || 'Sem paciente'}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Form {...form}>
+          <FormField
+            control={form.control}
+            name="accountId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Conta Medica</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a conta medica" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.account_number} — {account.patient_name || 'Sem paciente'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </Form>
 
         <div
           {...getRootProps()}

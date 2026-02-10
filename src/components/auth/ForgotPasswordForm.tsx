@@ -2,33 +2,31 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { forgotPasswordSchema, type ForgotPasswordInput } from '@/lib/validations';
 
 export function ForgotPasswordForm() {
-  const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<ForgotPasswordInput>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: '' },
+  });
+
+  const onSubmit = async (values: ForgotPasswordInput) => {
     setError(null);
 
-    if (!email.trim()) {
-      setError('Email obrigatorio');
-      return;
-    }
-
-    setLoading(true);
-
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
@@ -39,8 +37,6 @@ export function ForgotPasswordForm() {
       }
     } catch {
       setError('Erro ao enviar email. Tente novamente.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -53,7 +49,7 @@ export function ForgotPasswordForm() {
             <div className="space-y-2">
               <h2 className="text-lg font-semibold">Email enviado</h2>
               <p className="text-sm text-muted-foreground">
-                Se o email <span className="font-medium">{email}</span> estiver cadastrado,
+                Se o email <span className="font-medium">{form.getValues('email')}</span> estiver cadastrado,
                 voce recebera um link para redefinir sua senha.
               </p>
             </div>
@@ -78,34 +74,42 @@ export function ForgotPasswordForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="seu@email.com"
+                      autoComplete="email"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          {error && (
-            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert" aria-live="polite">
-              {error}
+            {error && (
+              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert" aria-live="polite">
+                {error}
+              </div>
+            )}
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Enviar link de recuperacao
+            </Button>
+            <div className="text-center">
+              <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
+                Voltar ao login
+              </Link>
             </div>
-          )}
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Enviar link de recuperacao
-          </Button>
-          <div className="text-center">
-            <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
-              Voltar ao login
-            </Link>
-          </div>
-        </form>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );

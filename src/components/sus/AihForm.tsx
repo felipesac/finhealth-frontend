@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -13,42 +13,43 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Loader2, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { z } from 'zod';
+import { susAihSchema } from '@/lib/validations';
+
+type AihFormValues = z.input<typeof susAihSchema>;
 
 export function AihForm() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
 
-  const [numeroAih, setNumeroAih] = useState('');
-  const [procedimentoPrincipal, setProcedimentoPrincipal] = useState('');
-  const [procedimentoSecundario, setProcedimentoSecundario] = useState('');
-  const [dataInternacao, setDataInternacao] = useState('');
-  const [dataSaida, setDataSaida] = useState('');
-  const [valor, setValor] = useState(0);
-  const [tipoAih, setTipoAih] = useState<string>('1');
-  const [cnes, setCnes] = useState('');
-  const [cboMedico, setCboMedico] = useState('');
+  const form = useForm<AihFormValues>({
+    resolver: zodResolver(susAihSchema),
+    defaultValues: {
+      numero_aih: '',
+      procedimento_principal: '',
+      procedimento_secundario: '',
+      data_internacao: '',
+      data_saida: '',
+      valor: 0,
+      tipo_aih: '1',
+      cnes: '',
+      cbo_medico: '',
+      diarias: 0,
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-
+  const onSubmit = async (values: AihFormValues) => {
     try {
       const res = await fetch('/api/sus/aih', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          numero_aih: numeroAih,
-          procedimento_principal: procedimentoPrincipal,
-          procedimento_secundario: procedimentoSecundario || undefined,
-          data_internacao: dataInternacao,
-          data_saida: dataSaida || undefined,
-          valor,
-          tipo_aih: tipoAih,
-          cnes,
-          cbo_medico: cboMedico || undefined,
-          diarias: 0,
+          ...values,
+          procedimento_secundario: values.procedimento_secundario || undefined,
+          data_saida: values.data_saida || undefined,
+          cbo_medico: values.cbo_medico || undefined,
         }),
       });
 
@@ -65,8 +66,6 @@ export function AihForm() {
         description: error.message || 'Tente novamente',
         variant: 'destructive',
       });
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -76,117 +75,154 @@ export function AihForm() {
         <CardTitle>Nova AIH</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="numero_aih">Numero AIH</Label>
-              <Input
-                id="numero_aih"
-                value={numeroAih}
-                onChange={(e) => setNumeroAih(e.target.value)}
-                placeholder="0000000000000"
-                maxLength={13}
-                required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="numero_aih"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Numero AIH</FormLabel>
+                    <FormControl>
+                      <Input placeholder="0000000000000" maxLength={13} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tipo_aih"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo AIH</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="1">Tipo 1 - Normal</SelectItem>
+                        <SelectItem value="5">Tipo 5 - Longa Permanencia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="cnes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CNES</FormLabel>
+                    <FormControl>
+                      <Input placeholder="0000000" maxLength={7} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="procedimento_principal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Procedimento Principal (SIGTAP)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="0301010072" maxLength={20} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="procedimento_secundario"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Procedimento Secundario</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Opcional" maxLength={20} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="cbo_medico"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CBO Medico</FormLabel>
+                    <FormControl>
+                      <Input placeholder="225125" maxLength={6} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="data_internacao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data Internacao</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="data_saida"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data Saida</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="valor"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel>Valor (R$)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="tipo_aih">Tipo AIH</Label>
-              <Select value={tipoAih} onValueChange={setTipoAih}>
-                <SelectTrigger id="tipo_aih">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Tipo 1 - Normal</SelectItem>
-                  <SelectItem value="5">Tipo 5 - Longa Permanencia</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cnes_aih">CNES</Label>
-              <Input
-                id="cnes_aih"
-                value={cnes}
-                onChange={(e) => setCnes(e.target.value)}
-                placeholder="0000000"
-                maxLength={7}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="proc_principal">Procedimento Principal (SIGTAP)</Label>
-              <Input
-                id="proc_principal"
-                value={procedimentoPrincipal}
-                onChange={(e) => setProcedimentoPrincipal(e.target.value)}
-                placeholder="0301010072"
-                maxLength={20}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="proc_secundario">Procedimento Secundario</Label>
-              <Input
-                id="proc_secundario"
-                value={procedimentoSecundario}
-                onChange={(e) => setProcedimentoSecundario(e.target.value)}
-                placeholder="Opcional"
-                maxLength={20}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cbo_medico">CBO Medico</Label>
-              <Input
-                id="cbo_medico"
-                value={cboMedico}
-                onChange={(e) => setCboMedico(e.target.value)}
-                placeholder="225125"
-                maxLength={6}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="data_internacao">Data Internacao</Label>
-              <Input
-                id="data_internacao"
-                type="date"
-                value={dataInternacao}
-                onChange={(e) => setDataInternacao(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="data_saida">Data Saida</Label>
-              <Input
-                id="data_saida"
-                type="date"
-                value={dataSaida}
-                onChange={(e) => setDataSaida(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="valor_aih">Valor (R$)</Label>
-              <Input
-                id="valor_aih"
-                type="number"
-                step="0.01"
-                value={valor}
-                onChange={(e) => setValor(parseFloat(e.target.value) || 0)}
-                min={0}
-                required
-              />
-            </div>
-          </div>
 
-          <div className="flex justify-end pt-2">
-            <Button type="submit" disabled={saving}>
-              {saving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-              Salvar AIH
-            </Button>
-          </div>
-        </form>
+            <div className="flex justify-end pt-2">
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Salvar AIH
+              </Button>
+            </div>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );

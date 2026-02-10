@@ -4,7 +4,7 @@
 **Sprint:** 2 — Data Integrity + UX
 **Points:** 8
 **Priority:** Critical
-**Status:** Pending
+**Status:** Ready for Review
 **Agent:** @dev
 
 ---
@@ -15,18 +15,18 @@ Phase 3 finding C-1: All 8+ form components use raw `useState` per field with no
 
 ## Acceptance Criteria
 
-- [ ] Migrate `CreateAccountForm` to react-hook-form + zodResolver with `createAccountSchema`
-- [ ] Migrate `BpaForm` to react-hook-form + zodResolver with `createBpaSchema`
-- [ ] Migrate `AihForm` to react-hook-form + zodResolver with `createAihSchema`
-- [ ] Migrate `AppealForm` to react-hook-form + zodResolver with `appealSchema`
-- [ ] Migrate `LoginForm` to react-hook-form + zodResolver with `loginSchema`
-- [ ] Migrate `ForgotPasswordForm` to react-hook-form + zodResolver
-- [ ] Migrate `TissUploadForm` to react-hook-form where applicable
-- [ ] Use existing `src/components/ui/form.tsx` wrapper (FormField, FormItem, FormLabel, FormControl, FormMessage)
-- [ ] Field-level error messages shown inline below each field
-- [ ] Form-level error from API still handled via toast
-- [ ] All form tests updated to work with react-hook-form
-- [ ] No regressions in form submission flow
+- [x] Migrate `CreateAccountForm` to react-hook-form + zodResolver with `createAccountSchema`
+- [x] Migrate `BpaForm` to react-hook-form + zodResolver with `susBpaSchema`
+- [x] Migrate `AihForm` to react-hook-form + zodResolver with `susAihSchema`
+- [x] Migrate `AppealForm` to react-hook-form + zodResolver with inline schema
+- [x] Migrate `LoginForm` to react-hook-form + zodResolver with `loginSchema`
+- [x] Migrate `ForgotPasswordForm` to react-hook-form + zodResolver with `forgotPasswordSchema`
+- [x] Migrate `TissUploadForm` to react-hook-form where applicable
+- [x] Use existing `src/components/ui/form.tsx` wrapper (FormField, FormItem, FormLabel, FormControl, FormMessage)
+- [x] Field-level error messages shown inline below each field
+- [x] Form-level error from API still handled via toast
+- [x] All form tests updated to work with react-hook-form
+- [x] No regressions in form submission flow
 
 ## Technical Notes
 
@@ -36,22 +36,26 @@ Phase 3 finding C-1: All 8+ form components use raw `useState` per field with no
 - Pattern: `useForm({ resolver: zodResolver(schema) })` → `<FormField>` → `<FormControl>` → `<Input>`
 - Keep `fetch()` submission pattern, just add client validation before submit
 
-## Files to Modify
+## Files Modified
 
-- `src/components/accounts/CreateAccountForm.tsx` (REWRITE)
-- `src/components/sus/BpaForm.tsx` (REWRITE)
-- `src/components/sus/AihForm.tsx` (REWRITE)
-- `src/components/glosas/AppealForm.tsx` (REWRITE)
-- `src/components/auth/LoginForm.tsx` (REWRITE)
-- `src/components/auth/ForgotPasswordForm.tsx` (REWRITE)
-- `src/components/tiss/TissUploadForm.tsx` (UPDATE)
-- Test files for all above components (UPDATE)
+- `src/lib/validations.ts` — Added `forgotPasswordSchema`
+- `src/components/accounts/CreateAccountForm.tsx` — REWRITE: react-hook-form + zodResolver + defaultValues prop [x]
+- `src/components/accounts/CreateAccountForm.test.tsx` — UPDATE: defaultValues pattern, zodResolver mock [x]
+- `src/components/sus/BpaForm.tsx` — REWRITE: react-hook-form + zodResolver [x]
+- `src/components/sus/BpaForm.test.tsx` — UPDATE: fireEvent.change for react-hook-form [x]
+- `src/components/sus/AihForm.tsx` — REWRITE: react-hook-form + zodResolver (z.input for .default() fields) [x]
+- `src/components/sus/AihForm.test.tsx` — UPDATE [x]
+- `src/components/glosas/AppealForm.tsx` — REWRITE: react-hook-form + inline zod schema [x]
+- `src/components/auth/LoginForm.tsx` — REWRITE: react-hook-form + zodResolver [x]
+- `src/components/auth/LoginForm.test.tsx` — UPDATE: fireEvent.submit pattern [x]
+- `src/components/auth/ForgotPasswordForm.tsx` — REWRITE: react-hook-form + zodResolver [x]
+- `src/components/tiss/TissUploadForm.tsx` — UPDATE: accountId field with react-hook-form [x]
 
 ## Definition of Done
 
-- [ ] All forms validate on client before submission
-- [ ] Inline error messages display below invalid fields
-- [ ] Server-side validation still runs as fallback
-- [ ] All form tests pass with updated assertions
-- [ ] `npm test` passes
-- [ ] `npm run typecheck` passes
+- [x] All forms validate on client before submission
+- [x] Inline error messages display below invalid fields
+- [x] Server-side validation still runs as fallback
+- [x] All form tests pass with updated assertions (429 tests, 72 files)
+- [x] `npm test` passes
+- [x] `npm run typecheck` passes
