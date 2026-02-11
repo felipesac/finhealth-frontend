@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.hoisted(() => {
-  process.env.N8N_TISS_WEBHOOK_URL = 'http://localhost:5678/webhook/tiss';
+  process.env.N8N_TISS_WEBHOOK_URL = '';
 });
 
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
@@ -17,6 +17,24 @@ import { rateLimit } from '@/lib/rate-limit';
 
 const validBody = { xml: '<TISS><header/></TISS>', accountId: 'acc-1' };
 
+const validTissXml = `<?xml version="1.0" encoding="UTF-8"?>
+<ans:mensagemTISS xmlns:ans="http://www.ans.gov.br/padroes/tiss/schemas">
+  <ans:cabecalho>
+    <ans:versaoPadrao>3.05.00</ans:versaoPadrao>
+  </ans:cabecalho>
+  <ans:prestadorParaOperadora>
+    <ans:loteGuias>
+      <ans:guiasTISS>
+        <ans:guiaSP-SADT>
+          <ans:cabecalhoGuia>
+            <ans:numeroGuiaPrestador>12345</ans:numeroGuiaPrestador>
+          </ans:cabecalhoGuia>
+        </ans:guiaSP-SADT>
+      </ans:guiasTISS>
+    </ans:loteGuias>
+  </ans:prestadorParaOperadora>
+</ans:mensagemTISS>`;
+
 function makeReq(body: unknown) {
   return new Request('http://localhost/api/tiss/upload', {
     method: 'POST',
@@ -30,9 +48,20 @@ function denyRate() { (rateLimit as unknown as ReturnType<typeof vi.fn>).mockRet
 function allowAuth() { (checkPermission as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ authorized: true, userId: 'u1', email: 'a@b.com', role: 'finance_manager' }); }
 function denyAuth() { (checkPermission as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ authorized: false, status: 401, error: 'Denied' }); }
 
+function mockSupabaseUpdate(error: { message: string } | null = null) {
+  const update = vi.fn().mockReturnValue({
+    eq: vi.fn().mockResolvedValue({ error }),
+  });
+  (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+    from: vi.fn().mockReturnValue({ update }),
+  });
+  return update;
+}
+
 describe('POST /api/tiss/upload', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.N8N_TISS_WEBHOOK_URL = 'http://localhost:5678/webhook/tiss';
     global.fetch = vi.fn();
   });
 
@@ -93,5 +122,68 @@ describe('POST /api/tiss/upload', () => {
 
     const res = await POST(makeReq(validBody));
     expect(res.status).toBe(502);
+  });
+});
+
+describe('POST /api/tiss/upload (local processing)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.N8N_TISS_WEBHOOK_URL = '';
+    global.fetch = vi.fn();
+  });
+
+  it('processes valid TISS XML locally and updates account', async () => {
+    allowRate(); allowAuth();
+    const update = mockSupabaseUpdate();
+
+    const res = await POST(makeReq({ xml: validTissXml, accountId: 'acc-1' }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.isValid).toBe(true);
+    expect(json.guideNumber).toBe('12345');
+    expect(json.message).toBe('Guia TISS processada com sucesso');
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tiss_guide_number: '12345',
+        tiss_guide_type: 'sadt',
+        tiss_validation_status: 'valid',
+        status: 'validated',
+      }),
+    );
+  });
+
+  it('returns validation errors for invalid XML', async () => {
+    allowRate(); allowAuth();
+    (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({});
+
+    const res = await POST(makeReq({ xml: '<invalid>data</invalid>' }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.isValid).toBe(false);
+    expect(json.errors).toContain('Elemento raiz mensagemTISS nao encontrado');
+  });
+
+  it('processes without accountId (validation only)', async () => {
+    allowRate(); allowAuth();
+    (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({});
+
+    const res = await POST(makeReq({ xml: validTissXml }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.guideNumber).toBe('12345');
+  });
+
+  it('returns 500 when Supabase update fails', async () => {
+    allowRate(); allowAuth();
+    mockSupabaseUpdate({ message: 'DB error' });
+
+    const res = await POST(makeReq({ xml: validTissXml, accountId: 'acc-1' }));
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.error).toContain('DB error');
   });
 });
