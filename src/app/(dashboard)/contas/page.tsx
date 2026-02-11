@@ -79,7 +79,17 @@ export default async function ContasPage({ searchParams }: PageProps) {
     insurerId: params.insurerId,
     search: params.search,
   };
-  const { accounts, insurers, total } = await getAccountsData(page, filters);
+  let accounts: MedicalAccount[] = [];
+  let insurers: HealthInsurer[] = [];
+  let total = 0;
+  try {
+    const data = await getAccountsData(page, filters);
+    accounts = data.accounts;
+    insurers = data.insurers;
+    total = data.total;
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

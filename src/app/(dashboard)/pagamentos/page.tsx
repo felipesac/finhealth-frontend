@@ -72,14 +72,26 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
   const search = params.search || '';
   const status = params.status || 'all';
   const insurerId = params.insurerId || 'all';
-  const { payments, total, metrics } = await getPaymentsData(page, search, status, insurerId);
+  let payments: Payment[] = [];
+  let total = 0;
+  let metrics = { totalReceived: 0, totalMatched: 0, totalUnmatched: 0, pendingCount: 0 };
+  let insurersList: HealthInsurer[] = [];
+  try {
+    const data = await getPaymentsData(page, search, status, insurerId);
+    payments = data.payments;
+    total = data.total;
+    metrics = data.metrics;
 
-  const supabase = await createClient();
-  const { data: insurersList } = await supabase
-    .from('health_insurers')
-    .select('id, ans_code, name, cnpj, tiss_version, contact_email, api_endpoint, config, active, created_at, updated_at')
-    .eq('active', true)
-    .order('name');
+    const supabase = await createClient();
+    const { data: insurersData } = await supabase
+      .from('health_insurers')
+      .select('id, ans_code, name, cnpj, tiss_version, contact_email, api_endpoint, config, active, created_at, updated_at')
+      .eq('active', true)
+      .order('name');
+    insurersList = (insurersData || []) as HealthInsurer[];
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -90,7 +102,7 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      <PaymentFilters insurers={(insurersList || []) as HealthInsurer[]} />
+      <PaymentFilters insurers={insurersList} />
 
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         <Card>
@@ -128,7 +140,7 @@ export default async function PagamentosPage({ searchParams }: PageProps) {
         </Card>
       </div>
 
-      <PaymentUpload insurers={(insurersList || []) as { id: string; name: string }[]} />
+      <PaymentUpload insurers={insurersList as { id: string; name: string }[]} />
 
       <ErrorBoundary fallbackMessage={t('errorLoading')}>
         <PaymentsTable payments={payments} />

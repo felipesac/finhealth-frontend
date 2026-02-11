@@ -73,7 +73,12 @@ async function getGlosasFaturamento(): Promise<GlosaFaturamento[]> {
 }
 
 export default async function GlosasFaturamentoPage() {
-  const glosas = await getGlosasFaturamento();
+  let glosas: GlosaFaturamento[] = [];
+  try {
+    glosas = await getGlosasFaturamento();
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   const totals = glosas.reduce(
     (acc, g) => ({

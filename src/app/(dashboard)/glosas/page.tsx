@@ -77,7 +77,17 @@ export default async function GlosasPage({ searchParams }: PageProps) {
   const tab = params.tab || 'pending';
   const search = params.search || '';
   const glosaType = params.glosaType || 'all';
-  const { glosas, total, counts } = await getGlosasData(page, tab, search, glosaType);
+  let glosas: Glosa[] = [];
+  let total = 0;
+  let counts = { pending: 0, inProgress: 0, resolved: 0, all: 0 };
+  try {
+    const data = await getGlosasData(page, tab, search, glosaType);
+    glosas = data.glosas;
+    total = data.total;
+    counts = data.counts;
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

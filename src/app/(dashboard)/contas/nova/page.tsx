@@ -34,7 +34,15 @@ async function getFormData() {
 }
 
 export default async function NovaContaPage() {
-  const { patients, insurers } = await getFormData();
+  let patients: { id: string; name: string }[] = [];
+  let insurers: { id: string; name: string }[] = [];
+  try {
+    const data = await getFormData();
+    patients = data.patients;
+    insurers = data.insurers;
+  } catch {
+    // Supabase unavailable — render empty form
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

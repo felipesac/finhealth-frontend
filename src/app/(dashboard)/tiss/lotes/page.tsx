@@ -68,7 +68,15 @@ async function getLotesData() {
 }
 
 export default async function TissLotesPage() {
-  const { lotes, metrics } = await getLotesData();
+  let lotes: TissLote[] = [];
+  let metrics = { total: 0, totalValor: 0, enviados: 0, pendentes: 0 };
+  try {
+    const data = await getLotesData();
+    lotes = data.lotes;
+    metrics = data.metrics;
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

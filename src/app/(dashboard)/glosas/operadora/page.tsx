@@ -85,7 +85,12 @@ async function getGlosasByInsurer() {
 }
 
 export default async function GlosasOperadoraPage() {
-  const glosasData = await getGlosasByInsurer();
+  let glosasData: Awaited<ReturnType<typeof getGlosasByInsurer>> = [];
+  try {
+    glosasData = await getGlosasByInsurer();
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   const totals = glosasData.reduce(
     (acc, item) => ({

@@ -55,7 +55,12 @@ async function getAihData() {
 }
 
 export default async function AihPage() {
-  const aihData = await getAihData();
+  let aihData: Awaited<ReturnType<typeof getAihData>> = [];
+  try {
+    aihData = await getAihData();
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   const totals = aihData.reduce(
     (acc, item) => ({

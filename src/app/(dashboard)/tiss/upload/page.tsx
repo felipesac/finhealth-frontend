@@ -31,7 +31,12 @@ async function getAccounts() {
 }
 
 export default async function TissUploadPage() {
-  const accounts = await getAccounts();
+  let accounts: { id: string; account_number: string; patient_name?: string }[] = [];
+  try {
+    accounts = await getAccounts();
+  } catch {
+    // Supabase unavailable — render empty form
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

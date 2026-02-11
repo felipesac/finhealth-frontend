@@ -100,7 +100,17 @@ async function getProductionData() {
 }
 
 export default async function ProducaoPage() {
-  const { byType, byInsurer, totals } = await getProductionData();
+  let byType: Awaited<ReturnType<typeof getProductionData>>['byType'] = [];
+  let byInsurer: Awaited<ReturnType<typeof getProductionData>>['byInsurer'] = [];
+  let totals = { count: 0, total: 0, approved: 0, paid: 0 };
+  try {
+    const data = await getProductionData();
+    byType = data.byType;
+    byInsurer = data.byInsurer;
+    totals = data.totals;
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

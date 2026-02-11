@@ -50,7 +50,12 @@ async function getBpaData() {
 }
 
 export default async function BpaPage() {
-  const bpaData = await getBpaData();
+  let bpaData: Awaited<ReturnType<typeof getBpaData>> = [];
+  try {
+    bpaData = await getBpaData();
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   const totals = bpaData.reduce(
     (acc, item) => ({

@@ -86,7 +86,15 @@ function getUrgencyVariant(days: number): 'default' | 'secondary' | 'destructive
 }
 
 export default async function InadimplenciaPage() {
-  const { accounts, metrics } = await getOverdueData();
+  let accounts: OverdueAccount[] = [];
+  let metrics = { total: 0, totalPendente: 0, topInsurer: '-', mediaAtraso: 0 };
+  try {
+    const data = await getOverdueData();
+    accounts = data.accounts;
+    metrics = data.metrics;
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

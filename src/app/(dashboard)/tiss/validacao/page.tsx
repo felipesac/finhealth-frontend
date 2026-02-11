@@ -75,7 +75,15 @@ function getErrorCount(errors: unknown): number {
 }
 
 export default async function TissValidacaoPage() {
-  const { accounts, metrics } = await getValidationData();
+  let accounts: TissValidationRow[] = [];
+  let metrics = { total: 0, valid: 0, invalid: 0, pending: 0 };
+  try {
+    const data = await getValidationData();
+    accounts = data.accounts;
+    metrics = data.metrics;
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

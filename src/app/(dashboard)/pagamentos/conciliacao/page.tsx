@@ -73,7 +73,15 @@ async function getReconciliationData() {
 }
 
 export default async function ConciliacaoPage() {
-  const { payments, metrics } = await getReconciliationData();
+  let payments: PaymentRow[] = [];
+  let metrics = { total: 0, matched: 0, partial: 0, pending: 0, percentConciliado: '0.0' };
+  try {
+    const data = await getReconciliationData();
+    payments = data.payments;
+    metrics = data.metrics;
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

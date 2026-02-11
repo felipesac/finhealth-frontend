@@ -54,7 +54,12 @@ async function getBillingData() {
 }
 
 export default async function FaturamentoPage() {
-  const billingData = await getBillingData();
+  let billingData: Awaited<ReturnType<typeof getBillingData>> = [];
+  try {
+    billingData = await getBillingData();
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   const totals = billingData.reduce(
     (acc, item) => ({

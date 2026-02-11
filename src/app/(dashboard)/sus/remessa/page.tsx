@@ -84,7 +84,15 @@ async function getRemessaData() {
 }
 
 export default async function RemessaSusPage() {
-  const { remessas, metrics } = await getRemessaData();
+  let remessas: Awaited<ReturnType<typeof getRemessaData>>['remessas'] = [];
+  let metrics = { totalBpa: 0, totalAih: 0, totalRegistros: 0, enviados: 0 };
+  try {
+    const data = await getRemessaData();
+    remessas = data.remessas;
+    metrics = data.metrics;
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">

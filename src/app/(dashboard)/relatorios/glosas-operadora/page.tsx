@@ -91,7 +91,12 @@ async function getGlosasData() {
 }
 
 export default async function GlosasOperadoraPage() {
-  const glosasData = await getGlosasData();
+  let glosasData: Awaited<ReturnType<typeof getGlosasData>> = [];
+  try {
+    glosasData = await getGlosasData();
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   const totals = glosasData.reduce(
     (acc, item) => ({

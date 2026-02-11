@@ -38,7 +38,15 @@ async function getTissData(page: number) {
 export default async function TissPage({ searchParams }: PageProps) {
   const { page: pageStr } = await searchParams;
   const page = Math.max(1, parseInt(pageStr || '1', 10));
-  const { accounts, total } = await getTissData(page);
+  let accounts: MedicalAccount[] = [];
+  let total = 0;
+  try {
+    const data = await getTissData(page);
+    accounts = data.accounts;
+    total = data.total;
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
