@@ -3,41 +3,14 @@ import { updateSession } from '@/lib/supabase/middleware';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-function getAllowedOrigins(): Set<string> {
-  const origins = new Set<string>();
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (appUrl) {
-    origins.add(new URL(appUrl).origin);
-  }
-
-  // Vercel sets VERCEL_URL on every deployment (host only, no protocol)
-  const vercelUrl = process.env.VERCEL_URL;
-  if (vercelUrl) {
-    origins.add(`https://${vercelUrl}`);
-  }
-
-  // Vercel production domain
-  const vercelProdUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  if (vercelProdUrl) {
-    origins.add(`https://${vercelProdUrl}`);
-  }
-
-  // Local dev fallback
-  if (origins.size === 0) {
-    origins.add('http://localhost:3000');
-  }
-
-  return origins;
-}
-
 export async function middleware(request: NextRequest) {
-  // CSRF: validate Origin header on mutation requests
+  // CSRF: verify Origin matches Host on mutation requests (OWASP double-submit)
   if (!SAFE_METHODS.has(request.method)) {
     const origin = request.headers.get('origin');
     if (origin) {
-      const allowed = getAllowedOrigins();
-      if (!allowed.has(origin)) {
+      const originHost = new URL(origin).host;
+      const requestHost = request.headers.get('host');
+      if (originHost !== requestHost) {
         return NextResponse.json(
           { error: 'CSRF validation failed' },
           { status: 403 },
