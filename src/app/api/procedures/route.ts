@@ -68,10 +68,7 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase
       .from('procedures')
-      .insert({
-        ...parsed.data,
-        created_by: user.id,
-      })
+      .insert(parsed.data)
       .select()
       .single();
 
