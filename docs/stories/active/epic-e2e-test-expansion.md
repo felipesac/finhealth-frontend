@@ -2,7 +2,7 @@
 
 **Project:** FinHealth Frontend
 **Created:** 2026-02-10
-**Status:** Active
+**Status:** Done
 **Total Points:** 34
 
 ---
@@ -82,8 +82,8 @@ This epic establishes comprehensive E2E testing across all critical user journey
 
 ## Definition of Done (Epic)
 
-- [ ] All 9 stories complete
-- [ ] E2E coverage across all 37 routes
-- [ ] CI-ready: tests run in headless mode
-- [ ] No flaky tests (retry count < 2%)
-- [ ] Page Object Model for all domains
+- [x] All 9 stories complete
+- [x] E2E coverage across all 37 routes
+- [x] CI-ready: tests run in headless mode
+- [x] No flaky tests (retry count < 2%)
+- [x] Page Object Model for all domains
