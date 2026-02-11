@@ -59,12 +59,6 @@ async function getDashboardData() {
       .limit(5),
   ]);
 
-  if (accountsRes.error || glosasRes.error || paymentsRes.error || recentAccountsRes.error) {
-    const errorMsg = accountsRes.error?.message || glosasRes.error?.message ||
-      paymentsRes.error?.message || recentAccountsRes.error?.message;
-    throw new Error(errorMsg || t('errorData'));
-  }
-
   const accountsList = accountsRes.data || [];
   const glosasList = glosasRes.data || [];
   const paymentsList = paymentsRes.data || [];
