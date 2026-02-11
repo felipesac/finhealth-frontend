@@ -39,7 +39,7 @@ async function getOverdueData() {
       health_insurer:health_insurers(id, name),
       patient:patients(id, name)
     `)
-    .in('status', ['validated', 'sent', 'glosa'])
+    .in('status', ['pending', 'validated', 'sent', 'glosa'])
     .order('created_at', { ascending: true });
 
   const all = (accounts || []) as unknown as OverdueAccount[];
