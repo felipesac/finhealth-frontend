@@ -142,9 +142,36 @@ async function getDashboardData() {
   };
 }
 
+const emptyDashboard = {
+  metrics: {
+    totalBilling: 0,
+    totalGlosas: 0,
+    totalPayments: 0,
+    pendingAccounts: 0,
+    appealSuccessRate: 0,
+    glosasBreakdown: [
+      { type: 'administrativa' as const, count: 0, amount: 0 },
+      { type: 'tecnica' as const, count: 0, amount: 0 },
+      { type: 'linear' as const, count: 0, amount: 0 },
+    ],
+  },
+  recentAccounts: [] as MedicalAccount[],
+  paymentChartData: [] as { month: string; received: number; matched: number }[],
+  accountStatusData: [] as { status: string; count: number; label: string }[],
+  glosasTrendData: [] as { month: string; amount: number }[],
+};
+
 export default async function DashboardPage() {
   const t = await getTranslations('dashboard');
-  const { metrics, recentAccounts, paymentChartData, accountStatusData, glosasTrendData } = await getDashboardData();
+
+  let dashboardData: typeof emptyDashboard;
+  try {
+    dashboardData = await getDashboardData();
+  } catch {
+    dashboardData = emptyDashboard;
+  }
+
+  const { metrics, recentAccounts, paymentChartData, accountStatusData, glosasTrendData } = dashboardData;
 
   return (
     <RealtimeDashboard>
