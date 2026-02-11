@@ -44,7 +44,6 @@ export async function POST(request: Request) {
         glosa_amount: 0,
         paid_amount: 0,
         metadata: {},
-        created_by: auth.userId,
       })
       .select()
       .single();

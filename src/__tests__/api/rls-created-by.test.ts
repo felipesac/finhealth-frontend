@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 /**
- * RLS created_by Tests — FH-1.1
+ * RLS INSERT Tests — FH-1.1
  *
- * Verifies that POST routes for core tables include created_by in insert payload.
+ * Verifies that POST routes for core tables do NOT include created_by
+ * (column does not exist in the DB schema; ownership is handled by
+ * RLS DEFAULT auth.uid() once the column is added via migration).
  */
 
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
@@ -35,7 +37,7 @@ function createMockSupa() {
     chain[m] = vi.fn().mockReturnValue(chain);
   });
   chain.insert = insertSpy.mockReturnValue(chain);
-  chain.single = vi.fn().mockResolvedValue({ data: { id: 'new-id', created_by: 'user-1' }, error: null });
+  chain.single = vi.fn().mockResolvedValue({ data: { id: 'new-id' }, error: null });
   chain.maybeSingle = vi.fn().mockResolvedValue({ data: { id: 'new-id' }, error: null });
   chain.then = (resolve: (v: unknown) => void) => resolve({ data: { id: 'new-id' }, error: null });
 
@@ -58,7 +60,7 @@ import { POST as accountsPost } from '@/app/api/accounts/route';
 import { POST as glosasPost } from '@/app/api/glosas/route';
 import { POST as paymentsPost } from '@/app/api/payments/route';
 
-describe('RLS Policy — API route INSERT sets created_by', () => {
+describe('API route INSERT does not include created_by', () => {
   let insertSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -69,7 +71,7 @@ describe('RLS Policy — API route INSERT sets created_by', () => {
     insertSpy = mocks.insertSpy;
   });
 
-  it('accounts POST includes created_by in insert payload', async () => {
+  it('accounts POST omits created_by from insert payload', async () => {
     const req = new Request('http://localhost/api/accounts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -85,12 +87,11 @@ describe('RLS Policy — API route INSERT sets created_by', () => {
 
     await accountsPost(req);
 
-    expect(insertSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ created_by: 'user-1' })
-    );
+    expect(insertSpy).toHaveBeenCalledTimes(1);
+    expect(insertSpy.mock.calls[0][0]).not.toHaveProperty('created_by');
   });
 
-  it('glosas POST includes created_by in insert payload', async () => {
+  it('glosas POST omits created_by from insert payload', async () => {
     const req = new Request('http://localhost/api/glosas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -105,12 +106,11 @@ describe('RLS Policy — API route INSERT sets created_by', () => {
 
     await glosasPost(req);
 
-    expect(insertSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ created_by: 'user-1' })
-    );
+    expect(insertSpy).toHaveBeenCalledTimes(1);
+    expect(insertSpy.mock.calls[0][0]).not.toHaveProperty('created_by');
   });
 
-  it('payments POST includes created_by in insert payload', async () => {
+  it('payments POST omits created_by from insert payload', async () => {
     const req = new Request('http://localhost/api/payments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -123,8 +123,7 @@ describe('RLS Policy — API route INSERT sets created_by', () => {
 
     await paymentsPost(req);
 
-    expect(insertSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ created_by: 'user-1' })
-    );
+    expect(insertSpy).toHaveBeenCalledTimes(1);
+    expect(insertSpy.mock.calls[0][0]).not.toHaveProperty('created_by');
   });
 });
