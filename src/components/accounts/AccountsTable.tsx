@@ -132,6 +132,12 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
       if (!json.success) {
         throw new Error(json.error || `Falha ao criar glosa para conta ${account.account_number}`);
       }
+
+      await fetch(`/api/accounts/${account.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ glosa_amount: (account.glosa_amount || 0) + data.glosa_amount }),
+      });
     }
 
     const statusRes = await fetch('/api/accounts/bulk', {

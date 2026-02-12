@@ -176,6 +176,8 @@ export const updateAccountSchema = z.object({
   admission_date: z.string().optional(),
   discharge_date: z.string().optional().nullable(),
   total_amount: z.number().min(0).optional(),
+  glosa_amount: z.number().min(0).optional(),
+  paid_amount: z.number().min(0).optional(),
   status: z.enum(['pending', 'validated', 'sent', 'paid', 'glosa', 'appeal']).optional(),
 });
 
