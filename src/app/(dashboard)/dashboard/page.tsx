@@ -64,7 +64,7 @@ async function getDashboardData() {
   const paymentsList = paymentsRes.data || [];
 
   const totalBilling = accountsList.reduce((sum, a) => sum + (a.total_amount || 0), 0);
-  const totalGlosas = accountsList.reduce((sum, a) => sum + (a.glosa_amount || 0), 0);
+  const totalGlosas = glosasList.reduce((sum, g) => sum + (g.glosa_amount || 0), 0);
   const totalPayments = paymentsList.reduce((sum, p) => sum + (p.total_amount || 0), 0);
   const pendingAccounts = accountsList.filter((a) => a.status === 'pending').length;
 

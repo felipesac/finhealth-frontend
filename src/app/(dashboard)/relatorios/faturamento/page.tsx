@@ -23,27 +23,47 @@ import { formatCurrency } from '@/lib/formatters';
 async function getBillingData() {
   const supabase = await createClient();
 
-  const { data: insurers } = await supabase
-    .from('health_insurers')
-    .select('id, name');
+  const [insurersRes, accountsRes, glosasRes, paymentsRes] = await Promise.all([
+    supabase.from('health_insurers').select('id, name'),
+    supabase.from('medical_accounts').select('id, health_insurer_id, total_amount'),
+    supabase.from('glosas').select('medical_account_id, glosa_amount'),
+    supabase.from('payments').select('health_insurer_id, total_amount'),
+  ]);
 
-  const { data: accounts } = await supabase
-    .from('medical_accounts')
-    .select('health_insurer_id, total_amount, glosa_amount, paid_amount');
+  const insurers = insurersRes.data || [];
+  const accounts = accountsRes.data || [];
+  const glosas = glosasRes.data || [];
+  const payments = paymentsRes.data || [];
+
+  // Map account id → health_insurer_id for glosa aggregation
+  const accountInsurer = new Map<string, string>();
+  accounts.forEach((a) => {
+    if (a.health_insurer_id) accountInsurer.set(a.id, a.health_insurer_id);
+  });
 
   // Aggregate by insurer
   const insurerMap = new Map<string, { name: string; total: number; glosa: number; paid: number }>();
 
-  (insurers || []).forEach((insurer) => {
+  insurers.forEach((insurer) => {
     insurerMap.set(insurer.id, { name: insurer.name, total: 0, glosa: 0, paid: 0 });
   });
 
-  (accounts || []).forEach((account) => {
+  accounts.forEach((account) => {
     if (account.health_insurer_id && insurerMap.has(account.health_insurer_id)) {
-      const data = insurerMap.get(account.health_insurer_id)!;
-      data.total += account.total_amount || 0;
-      data.glosa += account.glosa_amount || 0;
-      data.paid += account.paid_amount || 0;
+      insurerMap.get(account.health_insurer_id)!.total += account.total_amount || 0;
+    }
+  });
+
+  glosas.forEach((g) => {
+    const insurerId = g.medical_account_id ? accountInsurer.get(g.medical_account_id) : null;
+    if (insurerId && insurerMap.has(insurerId)) {
+      insurerMap.get(insurerId)!.glosa += g.glosa_amount || 0;
+    }
+  });
+
+  payments.forEach((p) => {
+    if (p.health_insurer_id && insurerMap.has(p.health_insurer_id)) {
+      insurerMap.get(p.health_insurer_id)!.paid += p.total_amount || 0;
     }
   });
 
