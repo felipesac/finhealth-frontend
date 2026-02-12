@@ -244,7 +244,7 @@ function GlosasTableInner({ glosas }: GlosasTableProps) {
         </TableHeader>
         <TableBody>
           {sorted.map((glosa) => {
-            const status = appealStatusConfig[glosa.appeal_status];
+            const status = appealStatusConfig[glosa.appeal_status] || { label: glosa.appeal_status || 'Desconhecido', variant: 'secondary' as const };
             return (
               <TableRow key={glosa.id}>
                 <TableCell>
@@ -269,15 +269,15 @@ function GlosasTableInner({ glosas }: GlosasTableProps) {
                   {formatCurrency(glosa.glosa_amount)}
                 </TableCell>
                 <TableCell>
-                  {glosa.success_probability !== undefined && (
+                  {glosa.success_probability != null && (
                     <div className="flex items-center gap-2">
                       <Progress
-                        value={glosa.success_probability * 100}
+                        value={glosa.success_probability}
                         className="h-2 w-16"
-                        aria-label={`Probabilidade de sucesso: ${(glosa.success_probability * 100).toFixed(0)}%`}
+                        aria-label={`Probabilidade de sucesso: ${Math.round(glosa.success_probability)}%`}
                       />
                       <span className="text-sm">
-                        {(glosa.success_probability * 100).toFixed(0)}%
+                        {Math.round(glosa.success_probability)}%
                       </span>
                     </div>
                   )}
@@ -315,7 +315,7 @@ function GlosasTableInner({ glosas }: GlosasTableProps) {
         />
       ) : (
         sorted.map((glosa) => {
-          const status = appealStatusConfig[glosa.appeal_status];
+          const status = appealStatusConfig[glosa.appeal_status] || { label: glosa.appeal_status || 'Desconhecido', variant: 'secondary' as const };
           return (
             <Card key={glosa.id} data-testid="glosa-card">
               <CardContent className="p-4">
@@ -344,16 +344,16 @@ function GlosasTableInner({ glosas }: GlosasTableProps) {
                       <div>{formatCurrency(glosa.original_amount)}</div>
                       <div className="text-muted-foreground">Conta</div>
                       <div>{glosa.medical_account?.account_number || '-'}</div>
-                      {glosa.success_probability !== undefined && (
+                      {glosa.success_probability != null && (
                         <>
                           <div className="text-muted-foreground">Probabilidade</div>
                           <div className="flex items-center gap-2">
                             <Progress
-                              value={glosa.success_probability * 100}
+                              value={glosa.success_probability}
                               className="h-2 w-16"
-                              aria-label={`Probabilidade de sucesso: ${(glosa.success_probability * 100).toFixed(0)}%`}
+                              aria-label={`Probabilidade de sucesso: ${Math.round(glosa.success_probability)}%`}
                             />
-                            <span>{(glosa.success_probability * 100).toFixed(0)}%</span>
+                            <span>{Math.round(glosa.success_probability)}%</span>
                           </div>
                         </>
                       )}

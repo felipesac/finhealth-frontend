@@ -63,8 +63,8 @@ export default async function GlosaDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const status = appealStatusConfig[glosa.appeal_status];
-  const successPercentage = (glosa.success_probability || 0) * 100;
+  const status = appealStatusConfig[glosa.appeal_status] || { label: glosa.appeal_status || 'Desconhecido', variant: 'secondary' as const };
+  const successPercentage = glosa.success_probability || 0;
 
   return (
     <div className="space-y-4 sm:space-y-6">

@@ -16,6 +16,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { BulkActions } from '@/components/ui/BulkActions';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { StatusBadge } from './StatusBadge';
+import { CreateGlosaModal } from './CreateGlosaModal';
+import type { GlosaFormData } from './CreateGlosaModal';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown, FileText } from 'lucide-react';
@@ -49,6 +51,8 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [glosaModalOpen, setGlosaModalOpen] = useState(false);
+  const [glosaTargetIds, setGlosaTargetIds] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -70,6 +74,12 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
   };
 
   const handleBulkUpdateStatus = async (status: string) => {
+    if (status === 'glosa') {
+      setGlosaTargetIds(Array.from(selectedIds));
+      setGlosaModalOpen(true);
+      return;
+    }
+
     setBulkLoading(true);
     try {
       const res = await fetch('/api/accounts/bulk', {
@@ -90,6 +100,44 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
     } finally {
       setBulkLoading(false);
     }
+  };
+
+  const handleGlosaConfirm = async (data: GlosaFormData) => {
+    const accountsToGlosa = accounts.filter((a) => glosaTargetIds.includes(a.id));
+
+    for (const account of accountsToGlosa) {
+      const res = await fetch('/api/glosas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          medical_account_id: account.id,
+          glosa_code: data.glosa_code,
+          glosa_description: data.glosa_description || undefined,
+          glosa_type: data.glosa_type,
+          original_amount: account.total_amount,
+          glosa_amount: data.glosa_amount,
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.error || `Falha ao criar glosa para conta ${account.account_number}`);
+      }
+    }
+
+    const statusRes = await fetch('/api/accounts/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: glosaTargetIds, action: 'update_status', status: 'glosa' }),
+    });
+    const statusJson = await statusRes.json();
+    if (!statusJson.success) {
+      throw new Error(statusJson.error || 'Falha ao atualizar status das contas');
+    }
+
+    toast({ title: `${glosaTargetIds.length} conta(s) glosada(s) com registro criado` });
+    setSelectedIds(new Set());
+    setGlosaTargetIds([]);
+    router.refresh();
   };
 
   const handleBulkDelete = async () => {
@@ -362,6 +410,12 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
         loading={bulkLoading}
       />
       <ResponsiveTable table={tableView} cards={cardsView} />
+      <CreateGlosaModal
+        open={glosaModalOpen}
+        onOpenChange={setGlosaModalOpen}
+        accountIds={glosaTargetIds}
+        onConfirm={handleGlosaConfirm}
+      />
     </div>
   );
 }

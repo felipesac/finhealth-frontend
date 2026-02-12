@@ -27,7 +27,7 @@ const mockGlosas: Glosa[] = [
     original_amount: 5000,
     glosa_amount: 1200,
     appeal_status: 'pending',
-    success_probability: 0.75,
+    success_probability: 75,
     priority_score: 80,
     created_at: '2024-06-15T10:00:00Z',
     updated_at: '2024-06-15T10:00:00Z',
