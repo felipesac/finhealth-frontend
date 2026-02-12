@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { updateUserRoleSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
@@ -47,7 +48,7 @@ export async function PATCH(
       );
     }
 
-    const { data: updated, error: updateError } = await supabase
+    const { data: updated, error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({ role: parsed.data.role })
       .eq('id', id)
@@ -59,6 +60,13 @@ export async function PATCH(
         { success: false, error: `Falha ao atualizar usuario: ${updateError.message}` },
         { status: 500 }
       );
+    }
+
+    // Sync role to Auth user_metadata
+    if (updated.user_id) {
+      await supabaseAdmin.auth.admin.updateUserById(updated.user_id, {
+        user_metadata: { role: parsed.data.role },
+      });
     }
 
     auditLog(supabase, auth.userId, {
@@ -111,10 +119,24 @@ export async function DELETE(
       );
     }
 
-    const { error: updateError } = await supabase
+    // Get profile to find user_id for Auth ban
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({ active: false })
       .eq('id', id);
+
+    // Also ban the Auth user to prevent login
+    if (profile?.user_id) {
+      await supabaseAdmin.auth.admin.updateUserById(profile.user_id, {
+        ban_duration: '876000h', // ~100 years
+      });
+    }
 
     if (updateError) {
       return NextResponse.json(

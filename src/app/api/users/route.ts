@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { inviteUserSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const { data: profiles, error } = await supabase
+    const { data: profiles, error } = await supabaseAdmin
       .from('profiles')
       .select('id, email, name, role, active, created_at, last_sign_in_at')
       .order('created_at', { ascending: false });
@@ -77,10 +78,33 @@ export async function POST(request: Request) {
       );
     }
 
-    // Insert into profiles table (user will be created when they accept invite / sign up)
-    const { data: profile, error: insertError } = await supabase
+    // 1. Create user in Supabase Auth via admin API
+    const tempPassword = `FH${Date.now()}!x`;
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: parsed.data.email,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: { name: parsed.data.name, role: parsed.data.role },
+    });
+
+    if (authError) {
+      if (authError.message?.includes('already been registered')) {
+        return NextResponse.json(
+          { success: false, error: 'Este email ja esta cadastrado no Auth' },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json(
+        { success: false, error: `Falha ao criar usuario: ${authError.message}` },
+        { status: 500 }
+      );
+    }
+
+    // 2. Insert into profiles table linked to Auth user
+    const { data: profile, error: insertError } = await supabaseAdmin
       .from('profiles')
       .insert({
+        user_id: authData.user.id,
         email: parsed.data.email,
         name: parsed.data.name,
         role: parsed.data.role,
@@ -90,6 +114,8 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
+      // Rollback: delete the Auth user if profile insert fails
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       if (insertError.code === '23505') {
         return NextResponse.json(
           { success: false, error: 'Este email ja esta cadastrado' },
@@ -97,7 +123,7 @@ export async function POST(request: Request) {
         );
       }
       return NextResponse.json(
-        { success: false, error: `Falha ao convidar usuario: ${insertError.message}` },
+        { success: false, error: `Falha ao criar perfil: ${insertError.message}` },
         { status: 500 }
       );
     }
