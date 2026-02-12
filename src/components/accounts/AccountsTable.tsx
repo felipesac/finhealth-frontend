@@ -85,7 +85,19 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
     }
 
     if (status === 'paid') {
-      setPaymentTargetIds(Array.from(selectedIds));
+      const selected = accounts.filter((a) => selectedIds.has(a.id));
+      const alreadyPaid = selected.filter((a) => a.status === 'paid');
+      if (alreadyPaid.length === selected.length) {
+        toast({ title: 'Conta(s) ja esta(ao) paga(s)', variant: 'destructive' });
+        return;
+      }
+      const unpaidIds = selected.filter((a) => a.status !== 'paid').map((a) => a.id);
+      if (alreadyPaid.length > 0) {
+        toast({
+          title: `${alreadyPaid.length} conta(s) ja paga(s) foram ignoradas`,
+        });
+      }
+      setPaymentTargetIds(unpaidIds);
       setPaymentModalOpen(true);
       return;
     }
@@ -160,6 +172,14 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
     const accountsToPay = accounts.filter((a) => paymentTargetIds.includes(a.id));
 
     for (const account of accountsToPay) {
+      // Check if account already has a payment recorded to prevent duplicates
+      if (account.paid_amount && account.paid_amount > 0) {
+        const confirmed = confirm(
+          `Conta ${account.account_number} ja possui pagamento de ${formatCurrency(account.paid_amount)}. Deseja criar outro?`
+        );
+        if (!confirmed) continue;
+      }
+
       const paymentRes = await fetch('/api/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
