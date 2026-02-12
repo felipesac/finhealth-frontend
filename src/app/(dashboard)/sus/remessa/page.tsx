@@ -47,14 +47,20 @@ async function getRemessaData() {
 
   const { data: aih } = await supabase
     .from('sus_aih')
-    .select('id, competencia, status, valor_total, created_at')
-    .order('competencia', { ascending: false })
+    .select('id, data_internacao, status, valor, created_at')
+    .order('data_internacao', { ascending: false })
     .limit(100);
 
   const allBpa = bpa || [];
-  const allAih = aih || [];
+  const normalizedAih = (aih || []).map((a) => ({
+    ...a,
+    competencia: a.data_internacao ? a.data_internacao.substring(0, 7) : 'sem-competencia',
+    valor_total: a.valor || 0,
+  }));
 
-  const bpaByCompetencia = allBpa.reduce<Record<string, { count: number; valor: number; status: string }>>((acc, item) => {
+  type GroupEntry = { count: number; valor: number; status: string };
+
+  const bpaByCompetencia = allBpa.reduce<Record<string, GroupEntry>>((acc, item) => {
     const key = item.competencia || 'sem-competencia';
     if (!acc[key]) acc[key] = { count: 0, valor: 0, status: item.status || 'rascunho' };
     acc[key].count += 1;
@@ -62,22 +68,40 @@ async function getRemessaData() {
     return acc;
   }, {});
 
+  const aihByCompetencia = normalizedAih.reduce<Record<string, GroupEntry>>((acc, item) => {
+    const key = item.competencia;
+    if (!acc[key]) acc[key] = { count: 0, valor: 0, status: item.status || 'rascunho' };
+    acc[key].count += 1;
+    acc[key].valor += item.valor_total;
+    return acc;
+  }, {});
+
   const totalBpa = allBpa.reduce((s, b) => s + (b.valor_total || 0), 0);
-  const totalAih = allAih.reduce((s, a) => s + (a.valor_total || 0), 0);
-  const countEnviados = [...allBpa, ...allAih].filter((i) => i.status === 'enviado' || i.status === 'aprovado').length;
+  const totalAih = normalizedAih.reduce((s, a) => s + a.valor_total, 0);
+  const countEnviados = [...allBpa, ...normalizedAih].filter((i) => i.status === 'enviado' || i.status === 'aprovado').length;
+
+  const bpaRemessas = Object.entries(bpaByCompetencia).map(([competencia, data]) => ({
+    competencia,
+    tipo: 'BPA',
+    quantidade: data.count,
+    valor: data.valor,
+    status: data.status,
+  }));
+
+  const aihRemessas = Object.entries(aihByCompetencia).map(([competencia, data]) => ({
+    competencia,
+    tipo: 'AIH',
+    quantidade: data.count,
+    valor: data.valor,
+    status: data.status,
+  }));
 
   return {
-    remessas: Object.entries(bpaByCompetencia).map(([competencia, data]) => ({
-      competencia,
-      tipo: 'BPA',
-      quantidade: data.count,
-      valor: data.valor,
-      status: data.status,
-    })),
+    remessas: [...bpaRemessas, ...aihRemessas].sort((a, b) => b.competencia.localeCompare(a.competencia)),
     metrics: {
       totalBpa,
       totalAih,
-      totalRegistros: allBpa.length + allAih.length,
+      totalRegistros: allBpa.length + normalizedAih.length,
       enviados: countEnviados,
     },
   };
