@@ -21,8 +21,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Shield } from 'lucide-react';
+import { Loader2, UserPlus, Shield, Copy, Check } from 'lucide-react';
 import { useSWRFetch } from '@/hooks/useSWRFetch';
 
 interface UserProfile {
@@ -54,6 +62,11 @@ const roleVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'ou
   tiss_operator: 'outline',
 };
 
+interface CreatedCredentials {
+  email: string;
+  tempPassword: string;
+}
+
 export function UserManagement() {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -61,9 +74,11 @@ export function UserManagement() {
   const [inviteRole, setInviteRole] = useState('finance_manager');
   const [submitting, setSubmitting] = useState(false);
   const [editingRole, setEditingRole] = useState<string | null>(null);
+  const [credentials, setCredentials] = useState<CreatedCredentials | null>(null);
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const { data, isLoading: loading, mutate } = useSWRFetch<UsersResponse>('/api/users');
+  const { data, error: fetchError, isLoading: loading, mutate } = useSWRFetch<UsersResponse>('/api/users');
   const users = data?.data ?? [];
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -79,7 +94,7 @@ export function UserManagement() {
       const json = await res.json();
 
       if (json.success) {
-        toast({ title: 'Usuario convidado com sucesso' });
+        setCredentials({ email: inviteEmail, tempPassword: json.tempPassword });
         setShowInvite(false);
         setInviteEmail('');
         setInviteName('');
@@ -93,6 +108,23 @@ export function UserManagement() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCopyPassword = async () => {
+    if (!credentials) return;
+    try {
+      await navigator.clipboard.writeText(credentials.tempPassword);
+      setCopied(true);
+      toast({ title: 'Senha copiada' });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: 'Falha ao copiar', variant: 'destructive' });
+    }
+  };
+
+  const handleCloseCredentials = () => {
+    setCredentials(null);
+    setCopied(false);
   };
 
   const handleUpdateRole = async (userId: string, newRole: string) => {
@@ -200,6 +232,45 @@ export function UserManagement() {
         </Card>
       )}
 
+      {/* Credential dialog after successful invite */}
+      <Dialog open={!!credentials} onOpenChange={(open) => { if (!open) handleCloseCredentials(); }}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Usuario criado com sucesso</DialogTitle>
+            <DialogDescription>
+              Compartilhe essas credenciais com o usuario. Ele deve alterar a senha no primeiro acesso.
+            </DialogDescription>
+          </DialogHeader>
+          {credentials && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Email</Label>
+                <div className="rounded-md bg-muted px-3 py-2 text-sm font-mono">
+                  {credentials.email}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Senha temporaria</Label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 rounded-md bg-muted px-3 py-2 text-sm font-mono">
+                    {credentials.tempPassword}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleCopyPassword}>
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Esta senha so sera exibida uma vez. Copie e envie ao usuario antes de fechar.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={handleCloseCredentials}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -218,6 +289,12 @@ export function UserManagement() {
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
                     <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                  </TableCell>
+                </TableRow>
+              ) : fetchError ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-destructive py-8">
+                    Erro ao carregar usuarios. Verifique suas permissoes.
                   </TableCell>
                 </TableRow>
               ) : users.length === 0 ? (

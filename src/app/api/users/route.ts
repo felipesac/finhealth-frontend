@@ -136,7 +136,7 @@ export async function POST(request: Request) {
       ip: getClientIp(request),
     });
 
-    return NextResponse.json({ success: true, data: profile });
+    return NextResponse.json({ success: true, data: profile, tempPassword });
   } catch (error: unknown) {
     const err = error as { message?: string };
     return NextResponse.json(
