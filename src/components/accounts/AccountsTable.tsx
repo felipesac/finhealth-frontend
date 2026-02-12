@@ -18,6 +18,8 @@ import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { StatusBadge } from './StatusBadge';
 import { CreateGlosaModal } from './CreateGlosaModal';
 import type { GlosaFormData } from './CreateGlosaModal';
+import { CreatePaymentModal } from './CreatePaymentModal';
+import type { PaymentFormData } from './CreatePaymentModal';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown, FileText } from 'lucide-react';
@@ -53,6 +55,8 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [glosaModalOpen, setGlosaModalOpen] = useState(false);
   const [glosaTargetIds, setGlosaTargetIds] = useState<string[]>([]);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentTargetIds, setPaymentTargetIds] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -77,6 +81,12 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
     if (status === 'glosa') {
       setGlosaTargetIds(Array.from(selectedIds));
       setGlosaModalOpen(true);
+      return;
+    }
+
+    if (status === 'paid') {
+      setPaymentTargetIds(Array.from(selectedIds));
+      setPaymentModalOpen(true);
       return;
     }
 
@@ -137,6 +147,64 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
     toast({ title: `${glosaTargetIds.length} conta(s) glosada(s) com registro criado` });
     setSelectedIds(new Set());
     setGlosaTargetIds([]);
+    router.refresh();
+  };
+
+  const handlePaymentConfirm = async (data: PaymentFormData) => {
+    const accountsToPay = accounts.filter((a) => paymentTargetIds.includes(a.id));
+
+    for (const account of accountsToPay) {
+      const paymentRes = await fetch('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          health_insurer_id: account.health_insurer_id,
+          total_amount: data.total_amount,
+          payment_date: data.payment_date,
+          payment_reference: data.payment_reference || undefined,
+        }),
+      });
+      const paymentJson = await paymentRes.json();
+      if (!paymentJson.success) {
+        throw new Error(paymentJson.error || `Falha ao criar pagamento para conta ${account.account_number}`);
+      }
+
+      if (account.status === 'glosa') {
+        const glosasRes = await fetch(`/api/glosas?medical_account_id=${account.id}`);
+        const glosasJson = await glosasRes.json();
+        if (glosasJson.success && glosasJson.data) {
+          for (const glosa of glosasJson.data) {
+            if (glosa.appeal_status !== 'accepted') {
+              await fetch(`/api/glosas/${glosa.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ appeal_status: 'accepted' }),
+              });
+            }
+          }
+        }
+      }
+
+      await fetch(`/api/accounts/${account.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paid_amount: data.total_amount }),
+      });
+    }
+
+    const statusRes = await fetch('/api/accounts/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: paymentTargetIds, action: 'update_status', status: 'paid' }),
+    });
+    const statusJson = await statusRes.json();
+    if (!statusJson.success) {
+      throw new Error(statusJson.error || 'Falha ao atualizar status das contas');
+    }
+
+    toast({ title: `${paymentTargetIds.length} conta(s) paga(s) com registro criado` });
+    setSelectedIds(new Set());
+    setPaymentTargetIds([]);
     router.refresh();
   };
 
@@ -415,6 +483,12 @@ function AccountsTableInner({ accounts }: AccountsTableProps) {
         onOpenChange={setGlosaModalOpen}
         accountIds={glosaTargetIds}
         onConfirm={handleGlosaConfirm}
+      />
+      <CreatePaymentModal
+        open={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        accountIds={paymentTargetIds}
+        onConfirm={handlePaymentConfirm}
       />
     </div>
   );

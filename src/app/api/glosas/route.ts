@@ -29,12 +29,19 @@ export async function GET(request: Request) {
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
     const offset = (page - 1) * limit;
+    const medicalAccountId = url.searchParams.get('medical_account_id');
 
-    const { data: glosas, error, count } = await supabase
+    let query = supabase
       .from('glosas')
       .select('*, medical_account:medical_accounts(account_number)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
+
+    if (medicalAccountId) {
+      query = query.eq('medical_account_id', medicalAccountId);
+    }
+
+    const { data: glosas, error, count } = await query;
 
     if (error) {
       return NextResponse.json(
