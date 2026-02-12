@@ -10,7 +10,7 @@ function getResend(): Resend | null {
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'FinHealth <noreply@finhealth.com.br>';
 
-export type EmailType = 'glosa' | 'pagamento' | 'conta';
+export type EmailType = 'glosa' | 'pagamento' | 'conta' | 'invite';
 
 interface SendEmailParams {
   to: string;
@@ -60,6 +60,30 @@ const templates: Record<EmailType, (data: Record<string, string | number>) => st
       </table>
       <a href="${data.url || '#'}" style="display: inline-block; padding: 10px 20px; background: #1a1a2e; color: white; text-decoration: none; border-radius: 6px;">Ver Detalhes</a>
       <p style="color: #999; font-size: 12px; margin-top: 24px;">FinHealth - Sistema de Gestao Financeira em Saude</p>
+    </div>
+  `,
+  invite: (data) => `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 0;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="color: #1a1a2e; font-size: 28px; margin: 0;">FinHealth</h1>
+        <p style="color: #666; margin: 4px 0 0;">Sistema de Gestao Financeira em Saude</p>
+      </div>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px;">
+        <h2 style="color: #1a1a2e; margin-top: 0;">Voce foi convidado para o FinHealth</h2>
+        <p style="color: #334155;">Ola <strong>${data.name}</strong>, voce recebeu acesso ao sistema FinHealth com o perfil de <strong>${data.role}</strong>.</p>
+        <p style="color: #334155;">Use as credenciais abaixo para fazer seu primeiro login:</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: white; border-radius: 6px; overflow: hidden;">
+          <tr><td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #666; width: 140px;">Email</td><td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-weight: bold; font-family: monospace;">${data.email}</td></tr>
+          <tr><td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #666;">Senha temporaria</td><td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-weight: bold; font-family: monospace; color: #dc2626;">${data.password}</td></tr>
+        </table>
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${data.url || 'https://finhealth-frontend.vercel.app'}" style="display: inline-block; padding: 12px 32px; background: #1a1a2e; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Acessar FinHealth</a>
+        </div>
+        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px 16px; margin-top: 16px;">
+          <p style="color: #92400e; margin: 0; font-size: 13px;"><strong>Importante:</strong> Esta e uma senha temporaria. Altere-a no primeiro acesso em Configuracoes &gt; Geral &gt; Seguranca.</p>
+        </div>
+      </div>
+      <p style="color: #999; font-size: 12px; margin-top: 24px; text-align: center;">FinHealth - Sistema de Gestao Financeira em Saude</p>
     </div>
   `,
 };

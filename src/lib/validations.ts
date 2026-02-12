@@ -160,7 +160,10 @@ export type InviteUserInput = z.infer<typeof inviteUserSchema>;
 export const updateUserRoleSchema = z.object({
   role: z.enum(['admin', 'finance_manager', 'auditor', 'tiss_operator'], {
     message: 'Role invalida',
-  }),
+  }).optional(),
+  active: z.boolean().optional(),
+}).refine((data) => data.role !== undefined || data.active !== undefined, {
+  message: 'Informe role ou active',
 });
 
 export type UpdateUserRoleInput = z.infer<typeof updateUserRoleSchema>;

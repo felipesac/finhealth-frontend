@@ -5,6 +5,7 @@ import { inviteUserSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
 import { checkPermission } from '@/lib/rbac';
+import { sendNotificationEmail } from '@/lib/email';
 
 export async function GET(request: Request) {
   try {
@@ -136,7 +137,33 @@ export async function POST(request: Request) {
       ip: getClientIp(request),
     });
 
-    return NextResponse.json({ success: true, data: profile, tempPassword });
+    // 3. Send invite email (non-blocking — admin sees password in modal as fallback)
+    const roleLabels: Record<string, string> = {
+      admin: 'Administrador',
+      finance_manager: 'Gestor Financeiro',
+      auditor: 'Auditor',
+      tiss_operator: 'Operador TISS',
+    };
+    let emailSent = false;
+    try {
+      const emailResult = await sendNotificationEmail({
+        to: parsed.data.email,
+        type: 'invite',
+        subject: 'Convite para acessar o FinHealth',
+        data: {
+          name: parsed.data.name,
+          email: parsed.data.email,
+          password: tempPassword,
+          role: roleLabels[parsed.data.role] || parsed.data.role,
+          url: 'https://finhealth-frontend.vercel.app',
+        },
+      });
+      emailSent = !!emailResult.success;
+    } catch (emailErr) {
+      console.error('[users/invite] Email send failed:', emailErr);
+    }
+
+    return NextResponse.json({ success: true, data: profile, tempPassword, emailSent });
   } catch (error: unknown) {
     const err = error as { message?: string };
     return NextResponse.json(

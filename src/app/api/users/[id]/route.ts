@@ -48,9 +48,14 @@ export async function PATCH(
       );
     }
 
+    // Build update payload
+    const updatePayload: Record<string, unknown> = {};
+    if (parsed.data.role !== undefined) updatePayload.role = parsed.data.role;
+    if (parsed.data.active !== undefined) updatePayload.active = parsed.data.active;
+
     const { data: updated, error: updateError } = await supabaseAdmin
       .from('profiles')
-      .update({ role: parsed.data.role })
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single();
@@ -62,18 +67,31 @@ export async function PATCH(
       );
     }
 
-    // Sync role to Auth user_metadata
+    // Sync to Auth
     if (updated.user_id) {
-      await supabaseAdmin.auth.admin.updateUserById(updated.user_id, {
-        user_metadata: { role: parsed.data.role },
-      });
+      if (parsed.data.role !== undefined) {
+        await supabaseAdmin.auth.admin.updateUserById(updated.user_id, {
+          user_metadata: { role: parsed.data.role },
+        });
+      }
+      if (parsed.data.active === true) {
+        // Unban user
+        await supabaseAdmin.auth.admin.updateUserById(updated.user_id, {
+          ban_duration: 'none',
+        });
+      } else if (parsed.data.active === false) {
+        // Ban user
+        await supabaseAdmin.auth.admin.updateUserById(updated.user_id, {
+          ban_duration: '876000h',
+        });
+      }
     }
 
     auditLog(supabase, auth.userId, {
-      action: 'user.update_role',
+      action: parsed.data.active !== undefined ? 'user.toggle_active' : 'user.update_role',
       resource: 'profiles',
       resource_id: id,
-      details: { new_role: parsed.data.role },
+      details: { ...updatePayload },
       ip: getClientIp(request),
     });
 

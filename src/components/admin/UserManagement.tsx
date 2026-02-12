@@ -65,6 +65,7 @@ const roleVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'ou
 interface CreatedCredentials {
   email: string;
   tempPassword: string;
+  emailSent: boolean;
 }
 
 export function UserManagement() {
@@ -94,7 +95,7 @@ export function UserManagement() {
       const json = await res.json();
 
       if (json.success) {
-        setCredentials({ email: inviteEmail, tempPassword: json.tempPassword });
+        setCredentials({ email: inviteEmail, tempPassword: json.tempPassword, emailSent: !!json.emailSent });
         setShowInvite(false);
         setInviteEmail('');
         setInviteName('');
@@ -148,21 +149,26 @@ export function UserManagement() {
     }
   };
 
-  const handleDeactivate = async (userId: string) => {
-    if (!confirm('Deseja realmente desativar este usuario?')) return;
+  const handleToggleActive = async (userId: string, activate: boolean) => {
+    const action = activate ? 'ativar' : 'desativar';
+    if (!confirm(`Deseja realmente ${action} este usuario?`)) return;
 
     try {
-      const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: activate }),
+      });
       const json = await res.json();
 
       if (json.success) {
-        toast({ title: 'Usuario desativado' });
+        toast({ title: activate ? 'Usuario ativado' : 'Usuario desativado' });
         mutate();
       } else {
-        toast({ title: json.error || 'Erro ao desativar usuario', variant: 'destructive' });
+        toast({ title: json.error || `Erro ao ${action} usuario`, variant: 'destructive' });
       }
     } catch {
-      toast({ title: 'Erro ao desativar usuario', variant: 'destructive' });
+      toast({ title: `Erro ao ${action} usuario`, variant: 'destructive' });
     }
   };
 
@@ -238,7 +244,9 @@ export function UserManagement() {
           <DialogHeader>
             <DialogTitle>Usuario criado com sucesso</DialogTitle>
             <DialogDescription>
-              Compartilhe essas credenciais com o usuario. Ele deve alterar a senha no primeiro acesso.
+              {credentials?.emailSent
+                ? 'Um email com as credenciais foi enviado ao usuario.'
+                : 'Compartilhe essas credenciais com o usuario. Ele deve alterar a senha no primeiro acesso.'}
             </DialogDescription>
           </DialogHeader>
           {credentials && (
@@ -348,14 +356,23 @@ export function UserManagement() {
                       >
                         <Shield className="h-4 w-4" />
                       </Button>
-                      {user.active && (
+                      {user.active ? (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeactivate(user.id)}
+                          onClick={() => handleToggleActive(user.id, false)}
                         >
                           Desativar
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-green-600 hover:text-green-600"
+                          onClick={() => handleToggleActive(user.id, true)}
+                        >
+                          Ativar
                         </Button>
                       )}
                     </TableCell>
