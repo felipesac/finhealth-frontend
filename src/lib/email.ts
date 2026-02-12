@@ -8,7 +8,7 @@ function getResend(): Resend | null {
   return _resend;
 }
 
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'FinHealth <noreply@finhealth.com.br>';
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'FinHealth <onboarding@resend.dev>';
 
 export type EmailType = 'glosa' | 'pagamento' | 'conta' | 'invite';
 
