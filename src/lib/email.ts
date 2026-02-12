@@ -104,6 +104,11 @@ export async function sendNotificationEmail({ to, type, subject, data }: SendEma
       html,
     });
 
+    if (result.error) {
+      console.error('[email] Resend error:', result.error.message);
+      return { success: false, error: result.error.message };
+    }
+
     return { success: true, id: result.data?.id };
   } catch (err: unknown) {
     const error = err as { message?: string };
