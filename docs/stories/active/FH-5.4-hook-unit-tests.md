@@ -4,7 +4,7 @@
 **Sprint:** 6 — Quality
 **Points:** 5
 **Priority:** Medium
-**Status:** Ready for Development
+**Status:** Done
 **Agent:** @dev
 
 ---
@@ -17,28 +17,28 @@ Post-brownfield audit found 13 custom hooks without unit tests. Hooks contain cr
 
 ### TanStack Query Hooks (7 hooks)
 
-- [ ] Test `use-accounts.ts` — useAccounts, useAccount, useCreateAccount
-- [ ] Test `use-glosas.ts` — useGlosas, useGlosa, useCreateGlosa
-- [ ] Test `use-payments.ts` — usePayments, usePayment, useCreatePayment
-- [ ] Test `use-dashboard.ts` — useDashboardMetrics
-- [ ] Test `use-users.ts` — useUsers, useInviteUser, useUpdateUser
-- [ ] Test `use-notifications.ts` — useNotifications, useMarkNotificationRead (optimistic updates)
-- [ ] Test `use-settings.ts` — useTissSettings, useNotificationPreferences, mutations
+- [x] Test `use-accounts.ts` — useAccounts, useAccount, useCreateAccount (7 tests)
+- [x] Test `use-glosas.ts` — useGlosas, useGlosa, useCreateGlosa (6 tests)
+- [x] Test `use-payments.ts` — usePayments, usePayment, useCreatePayment (6 tests)
+- [x] Test `use-dashboard.ts` — useDashboardMetrics (3 tests)
+- [x] Test `use-users.ts` — useUsers, useInviteUser, useUpdateUser (6 tests)
+- [x] Test `use-notifications.ts` — useNotifications, useMarkNotificationRead (6 tests)
+- [x] Test `use-settings.ts` — useTissSettings, useNotificationPreferences, mutations (9 tests)
 
 ### Utility Hooks (4+ hooks)
 
-- [ ] Test `useRealtimeSubscription.ts` — subscription setup, callback invocation, cleanup
-- [ ] Test `useRealtimeTable.ts` — table subscription pattern
-- [ ] Test `use-debounce.ts` — debounce timing, value updates
-- [ ] Test `useKeyboardShortcuts.ts` — shortcut registration, handler invocation
+- [x] Test `useRealtimeSubscription.ts` — subscription setup, callback invocation, cleanup (5 tests)
+- [x] Test `useRealtimeTable.ts` — INSERT/UPDATE/DELETE handling, setData (5 tests)
+- [x] Test `use-debounce.ts` — debounce timing, value updates, cleanup (5 tests)
+- [x] Test `useKeyboardShortcuts.ts` — shortcut registration, handler invocation (10 tests)
 
 ### Test Patterns
 
-- [ ] Use `renderHook` from `@testing-library/react`
-- [ ] Wrap TanStack Query hooks with `QueryClientProvider` in test wrapper
-- [ ] Mock `fetch` for API hooks
-- [ ] Mock Supabase client for realtime hooks
-- [ ] Test error states and loading states
+- [x] Use `renderHook` from `@testing-library/react`
+- [x] Wrap TanStack Query hooks with `QueryClientProvider` in test wrapper
+- [x] Mock `fetch` for API hooks
+- [x] Mock Supabase client for realtime hooks
+- [x] Test error states and loading states
 
 ## Files to Create
 
@@ -56,7 +56,7 @@ Post-brownfield audit found 13 custom hooks without unit tests. Hooks contain cr
 
 ## Definition of Done
 
-- [ ] All 11+ hook test files created
-- [ ] Each hook has at least 3 test cases (success, error, edge case)
-- [ ] All tests pass
-- [ ] Production build succeeds
+- [x] All 11 hook test files created (68 tests total)
+- [x] Each hook has at least 3 test cases (success, error, edge case)
+- [x] All tests pass (537/537)
+- [x] Production build succeeds
