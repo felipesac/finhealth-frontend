@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { ThemeProvider } from "@/components/theme-provider";
-import { SWRProvider } from "@/components/providers/SWRProvider";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
@@ -64,9 +64,9 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <NextIntlClientProvider messages={messages}>
-            <SWRProvider>
+            <QueryProvider>
               {children}
-            </SWRProvider>
+            </QueryProvider>
           </NextIntlClientProvider>
           <Toaster />
         </ThemeProvider>

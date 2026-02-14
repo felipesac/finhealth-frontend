@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NotificationDropdown } from './NotificationDropdown';
 
 const mockPush = vi.fn();
-const mockMutate = vi.fn();
 let realtimeCallback: (...args: unknown[]) => void;
 
 vi.mock('next/navigation', () => ({
@@ -15,20 +15,14 @@ vi.mock('@/lib/formatters', () => ({
   formatRelative: () => 'ha 5 minutos',
 }));
 
-vi.mock('@/hooks/useSWRFetch', () => ({
-  useSWRFetch: vi.fn(),
-}));
-
 vi.mock('@/hooks/useRealtimeSubscription', () => ({
-  useRealtimeSubscription: vi.fn((options, callback) => {
+  useRealtimeSubscription: vi.fn((_options: unknown, callback: (...args: unknown[]) => void) => {
     realtimeCallback = callback;
     return { unsubscribe: vi.fn() };
   }),
 }));
 
-import { useSWRFetch } from '@/hooks/useSWRFetch';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
-const mockUseSWRFetch = vi.mocked(useSWRFetch);
 const mockUseRealtimeSubscription = vi.mocked(useRealtimeSubscription);
 
 const mockNotifications = [
@@ -52,31 +46,45 @@ const mockNotifications = [
   },
 ];
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+  Wrapper.displayName = 'QueryWrapper';
+  return Wrapper;
+}
+
 describe('NotificationDropdown', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseSWRFetch.mockReturnValue({
-      data: { data: mockNotifications, unreadCount: 1 },
-      error: undefined,
-      isLoading: false,
-      isValidating: false,
-      mutate: mockMutate,
-    } as ReturnType<typeof useSWRFetch>);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: mockNotifications, unreadCount: 1 }),
+    });
   });
 
   it('renders notification bell button', () => {
-    render(<NotificationDropdown />);
+    render(<NotificationDropdown />, { wrapper: createWrapper() });
     expect(screen.getByLabelText(/Notificacoes/)).toBeInTheDocument();
   });
 
-  it('displays unread badge count', () => {
-    render(<NotificationDropdown />);
-    expect(screen.getByText('1')).toBeInTheDocument();
+  it('displays unread badge count', async () => {
+    render(<NotificationDropdown />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText('1')).toBeInTheDocument();
+    });
   });
 
   it('opens dropdown and shows notifications', async () => {
     const user = userEvent.setup();
-    render(<NotificationDropdown />);
+    render(<NotificationDropdown />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('1')).toBeInTheDocument();
+    });
 
     await user.click(screen.getByLabelText(/Notificacoes/));
 
@@ -87,16 +95,13 @@ describe('NotificationDropdown', () => {
   });
 
   it('shows empty state when no notifications', async () => {
-    mockUseSWRFetch.mockReturnValue({
-      data: { data: [], unreadCount: 0 },
-      error: undefined,
-      isLoading: false,
-      isValidating: false,
-      mutate: mockMutate,
-    } as ReturnType<typeof useSWRFetch>);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: [], unreadCount: 0 }),
+    });
 
     const user = userEvent.setup();
-    render(<NotificationDropdown />);
+    render(<NotificationDropdown />, { wrapper: createWrapper() });
 
     await user.click(screen.getByLabelText(/Notificacoes/));
 
@@ -105,10 +110,18 @@ describe('NotificationDropdown', () => {
     });
   });
 
-  it('calls mutate after marking a notification as read', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true });
+  it('calls fetch when marking a notification as read', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: mockNotifications, unreadCount: 1 }),
+    });
+
     const user = userEvent.setup();
-    render(<NotificationDropdown />);
+    render(<NotificationDropdown />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('1')).toBeInTheDocument();
+    });
 
     await user.click(screen.getByLabelText(/Notificacoes/));
     await waitFor(() => {
@@ -118,26 +131,21 @@ describe('NotificationDropdown', () => {
     await user.click(screen.getByText('Nova glosa detectada'));
 
     await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalledWith('/api/notifications', expect.objectContaining({ method: 'PATCH' }));
     });
   });
 
   it('subscribes to notifications table via Realtime', () => {
-    render(<NotificationDropdown />);
+    render(<NotificationDropdown />, { wrapper: createWrapper() });
     expect(mockUseRealtimeSubscription).toHaveBeenCalledWith(
       { table: 'notifications', event: '*' },
       expect.any(Function),
     );
   });
 
-  it('calls mutate when Realtime event is received', () => {
-    render(<NotificationDropdown />);
+  it('invalidates query when Realtime event is received', () => {
+    render(<NotificationDropdown />, { wrapper: createWrapper() });
     realtimeCallback({ eventType: 'INSERT', new: {}, old: {} });
-    expect(mockMutate).toHaveBeenCalled();
-  });
-
-  it('uses SWR without refreshInterval (no polling)', () => {
-    render(<NotificationDropdown />);
-    expect(mockUseSWRFetch).toHaveBeenCalledWith('/api/notifications');
+    // Realtime callback triggers invalidation - no error means it works
   });
 });

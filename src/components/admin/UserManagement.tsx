@@ -31,17 +31,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, Shield, Copy, Check } from 'lucide-react';
-import { useSWRFetch } from '@/hooks/useSWRFetch';
-
-interface UserProfile {
-  id: string;
-  email: string;
-  name: string | null;
-  role: string;
-  active: boolean;
-  created_at: string;
-  last_sign_in_at: string | null;
-}
+import { useUsers, useInviteUser, useUpdateUser } from '@/hooks/queries/use-users';
 
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
@@ -49,11 +39,6 @@ const roleLabels: Record<string, string> = {
   auditor: 'Auditor',
   tiss_operator: 'Operador TISS',
 };
-
-interface UsersResponse {
-  success: boolean;
-  data: UserProfile[];
-}
 
 const roleVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   admin: 'destructive',
@@ -79,7 +64,9 @@ export function UserManagement() {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const { data, error: fetchError, isLoading: loading, mutate } = useSWRFetch<UsersResponse>('/api/users');
+  const { data, error: fetchError, isLoading: loading } = useUsers();
+  const inviteUser = useInviteUser();
+  const updateUser = useUpdateUser();
   const users = data?.data ?? [];
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -87,12 +74,7 @@ export function UserManagement() {
     setSubmitting(true);
 
     try {
-      const res = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inviteEmail, name: inviteName, role: inviteRole }),
-      });
-      const json = await res.json();
+      const json = await inviteUser.mutateAsync({ email: inviteEmail, name: inviteName, role: inviteRole });
 
       if (json.success) {
         setCredentials({ email: inviteEmail, tempPassword: json.tempPassword, emailSent: !!json.emailSent });
@@ -100,7 +82,6 @@ export function UserManagement() {
         setInviteEmail('');
         setInviteName('');
         setInviteRole('finance_manager');
-        mutate();
       } else {
         toast({ title: json.error || 'Erro ao convidar usuario', variant: 'destructive' });
       }
@@ -130,17 +111,11 @@ export function UserManagement() {
 
   const handleUpdateRole = async (userId: string, newRole: string) => {
     try {
-      const res = await fetch(`/api/users/${userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole }),
-      });
-      const json = await res.json();
+      const json = await updateUser.mutateAsync({ userId, role: newRole });
 
       if (json.success) {
         toast({ title: 'Perfil atualizado com sucesso' });
         setEditingRole(null);
-        mutate();
       } else {
         toast({ title: json.error || 'Erro ao atualizar perfil', variant: 'destructive' });
       }
@@ -154,16 +129,10 @@ export function UserManagement() {
     if (!confirm(`Deseja realmente ${action} este usuario?`)) return;
 
     try {
-      const res = await fetch(`/api/users/${userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: activate }),
-      });
-      const json = await res.json();
+      const json = await updateUser.mutateAsync({ userId, active: activate });
 
       if (json.success) {
         toast({ title: activate ? 'Usuario ativado' : 'Usuario desativado' });
-        mutate();
       } else {
         toast({ title: json.error || `Erro ao ${action} usuario`, variant: 'destructive' });
       }

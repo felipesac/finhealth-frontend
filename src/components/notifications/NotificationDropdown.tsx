@@ -13,8 +13,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Bell, Check, AlertCircle, Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { formatRelative } from '@/lib/formatters';
-import { useSWRFetch } from '@/hooks/useSWRFetch';
+import { useNotifications, useMarkNotificationRead } from '@/hooks/queries/use-notifications';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
 
 interface Notification {
   id: string;
@@ -26,11 +28,6 @@ interface Notification {
   created_at: string;
 }
 
-interface NotificationsResponse {
-  data: Notification[];
-  unreadCount: number;
-}
-
 const typeIcons = {
   info: Info,
   warning: AlertTriangle,
@@ -40,44 +37,28 @@ const typeIcons = {
 
 export function NotificationDropdown() {
   const router = useRouter();
-  const { data, mutate } = useSWRFetch<NotificationsResponse>('/api/notifications');
+  const queryClient = useQueryClient();
+  const { data } = useNotifications();
+  const markMutation = useMarkNotificationRead();
 
   const notifications = data?.data ?? [];
   const unreadCount = data?.unreadCount ?? 0;
 
   const handleRealtimeChange = useCallback(() => {
-    mutate();
-  }, [mutate]);
+    queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() });
+  }, [queryClient]);
 
   useRealtimeSubscription(
     { table: 'notifications', event: '*' },
     handleRealtimeChange,
   );
 
-  const markAsRead = async (id: string) => {
-    mutate(
-      { data: notifications.map((n) => (n.id === id ? { ...n, read: true } : n)), unreadCount: Math.max(0, unreadCount - 1) },
-      false,
-    );
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    mutate();
+  const markAsRead = (id: string) => {
+    markMutation.mutate({ id });
   };
 
-  const markAllRead = async () => {
-    mutate(
-      { data: notifications.map((n) => ({ ...n, read: true })), unreadCount: 0 },
-      false,
-    );
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markAllRead: true }),
-    });
-    mutate();
+  const markAllRead = () => {
+    markMutation.mutate({ markAllRead: true });
   };
 
   const handleClick = (notification: Notification) => {

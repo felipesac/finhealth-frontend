@@ -12,6 +12,12 @@ import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import { CertificateUpload } from '@/components/certificates/CertificateUpload';
+import {
+  useTissSettings,
+  useNotificationPreferences,
+  useUpdateTissSettings,
+  useUpdateNotificationPreferences,
+} from '@/hooks/queries/use-settings';
 
 interface NotificationPreferences {
   email_glosas: boolean;
@@ -30,14 +36,17 @@ export default function ConfiguracoesPage() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [tissVersion, setTissVersion] = useState('3.05.00');
   const [cnes, setCnes] = useState('');
-  const [savingTiss, setSavingTiss] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>({
     email_glosas: true,
     email_pagamentos: true,
     email_contas: false,
     push_enabled: false,
   });
-  const [savingNotif, setSavingNotif] = useState(false);
+
+  const { data: tissData } = useTissSettings();
+  const { data: notifData } = useNotificationPreferences();
+  const updateTiss = useUpdateTissSettings();
+  const updateNotifPrefs = useUpdateNotificationPreferences();
 
   useEffect(() => {
     const supabase = createClient();
@@ -47,39 +56,29 @@ export default function ConfiguracoesPage() {
         setName(data.user.user_metadata?.name || '');
       }
     });
-    fetch('/api/notifications/preferences')
-      .then((r) => r.json())
-      .then((res) => {
-        if (res.data) setNotifPrefs(res.data);
-      })
-      .catch(() => {});
-    fetch('/api/settings/tiss')
-      .then((r) => r.json())
-      .then((res) => {
-        if (res.data) {
-          setTissVersion(res.data.tiss_version || '3.05.00');
-          setCnes(res.data.cnes || '');
-        }
-      })
-      .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (tissData) {
+      setTissVersion(tissData.tiss_version || '3.05.00');
+      setCnes(tissData.cnes || '');
+    }
+  }, [tissData]);
+
+  useEffect(() => {
+    if (notifData) {
+      setNotifPrefs(notifData);
+    }
+  }, [notifData]);
+
   const handleSaveNotifications = useCallback(async (prefs: NotificationPreferences) => {
-    setSavingNotif(true);
     try {
-      const res = await fetch('/api/notifications/preferences', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(prefs),
-      });
-      if (!res.ok) throw new Error('Erro ao salvar');
+      await updateNotifPrefs.mutateAsync(prefs);
       toast({ title: t('notifUpdated') });
     } catch {
       toast({ title: t('notifError'), variant: 'destructive' });
-    } finally {
-      setSavingNotif(false);
     }
-  }, [t]);
+  }, [t, updateNotifPrefs]);
 
   const subscribePush = useCallback(async () => {
     try {
@@ -147,19 +146,11 @@ export default function ConfiguracoesPage() {
       toast({ title: t('cnesValidation'), variant: 'destructive' });
       return;
     }
-    setSavingTiss(true);
     try {
-      const res = await fetch('/api/settings/tiss', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tiss_version: tissVersion, cnes }),
-      });
-      if (!res.ok) throw new Error('Erro ao salvar');
+      await updateTiss.mutateAsync({ tiss_version: tissVersion, cnes });
       toast({ title: t('tissUpdated') });
     } catch {
       toast({ title: t('tissError'), variant: 'destructive' });
-    } finally {
-      setSavingTiss(false);
     }
   };
 
@@ -295,7 +286,7 @@ export default function ConfiguracoesPage() {
                 id="notif-glosas"
                 checked={notifPrefs.email_glosas}
                 onCheckedChange={() => toggleNotifPref('email_glosas')}
-                disabled={savingNotif}
+                disabled={updateNotifPrefs.isPending}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -307,7 +298,7 @@ export default function ConfiguracoesPage() {
                 id="notif-pagamentos"
                 checked={notifPrefs.email_pagamentos}
                 onCheckedChange={() => toggleNotifPref('email_pagamentos')}
-                disabled={savingNotif}
+                disabled={updateNotifPrefs.isPending}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -319,7 +310,7 @@ export default function ConfiguracoesPage() {
                 id="notif-contas"
                 checked={notifPrefs.email_contas}
                 onCheckedChange={() => toggleNotifPref('email_contas')}
-                disabled={savingNotif}
+                disabled={updateNotifPrefs.isPending}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -331,7 +322,7 @@ export default function ConfiguracoesPage() {
                 id="notif-push"
                 checked={notifPrefs.push_enabled}
                 onCheckedChange={() => toggleNotifPref('push_enabled')}
-                disabled={savingNotif}
+                disabled={updateNotifPrefs.isPending}
               />
             </div>
           </CardContent>
@@ -368,8 +359,8 @@ export default function ConfiguracoesPage() {
                 <p className="text-xs text-muted-foreground">{t('cnesHelp')}</p>
               </div>
             </div>
-            <Button onClick={handleSaveTiss} disabled={savingTiss}>
-              {savingTiss && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={handleSaveTiss} disabled={updateTiss.isPending}>
+              {updateTiss.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t('saveTissConfig')}
             </Button>
           </CardContent>

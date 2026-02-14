@@ -1,21 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserManagement } from './UserManagement';
 
 const mockToast = vi.fn();
-const mockMutate = vi.fn();
 
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({ toast: mockToast }),
 }));
-
-vi.mock('@/hooks/useSWRFetch', () => ({
-  useSWRFetch: vi.fn(),
-}));
-
-import { useSWRFetch } from '@/hooks/useSWRFetch';
-const mockUseSWRFetch = vi.mocked(useSWRFetch);
 
 const mockUsers = [
   {
@@ -38,86 +31,85 @@ const mockUsers = [
   },
 ];
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+  Wrapper.displayName = 'QueryWrapper';
+  return Wrapper;
+}
+
 describe('UserManagement', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseSWRFetch.mockReturnValue({
-      data: { success: true, data: mockUsers },
-      error: undefined,
-      isLoading: false,
-      isValidating: false,
-      mutate: mockMutate,
-    } as ReturnType<typeof useSWRFetch>);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true, data: mockUsers }),
+    });
   });
 
-  it('renders user list', () => {
-    render(<UserManagement />);
-    expect(screen.getByText('Admin User')).toBeInTheDocument();
+  it('renders user list', async () => {
+    render(<UserManagement />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText('Admin User')).toBeInTheDocument();
+    });
     expect(screen.getByText('Auditor User')).toBeInTheDocument();
   });
 
-  it('displays user count', () => {
-    render(<UserManagement />);
-    expect(screen.getByText('2 usuarios cadastrados')).toBeInTheDocument();
-  });
-
-  it('shows loading state', () => {
-    mockUseSWRFetch.mockReturnValue({
-      data: undefined,
-      error: undefined,
-      isLoading: true,
-      isValidating: false,
-      mutate: mockMutate,
-    } as ReturnType<typeof useSWRFetch>);
-
-    render(<UserManagement />);
-    expect(screen.queryByText('Admin User')).not.toBeInTheDocument();
+  it('displays user count', async () => {
+    render(<UserManagement />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText('2 usuarios cadastrados')).toBeInTheDocument();
+    });
   });
 
   it('shows invite form when button clicked', async () => {
     const user = userEvent.setup();
-    render(<UserManagement />);
+    render(<UserManagement />, { wrapper: createWrapper() });
 
+    await waitFor(() => {
+      expect(screen.getByText('Convidar Usuario')).toBeInTheDocument();
+    });
     await user.click(screen.getByText('Convidar Usuario'));
 
     expect(screen.getByLabelText('Nome')).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
   });
 
-  it('calls mutate after successful invite', async () => {
+  it('calls fetch after successful invite', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ success: true }),
+      json: () => Promise.resolve({ success: true, data: mockUsers }),
     });
 
     const user = userEvent.setup();
-    render(<UserManagement />);
+    render(<UserManagement />, { wrapper: createWrapper() });
 
+    await waitFor(() => {
+      expect(screen.getByText('Convidar Usuario')).toBeInTheDocument();
+    });
     await user.click(screen.getByText('Convidar Usuario'));
     await user.type(screen.getByLabelText('Nome'), 'Novo User');
     await user.type(screen.getByLabelText('Email'), 'novo@test.com');
     await user.click(screen.getByText('Convidar'));
 
     await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalledWith('/api/users', expect.objectContaining({ method: 'POST' }));
     });
   });
 
-  it('fetches users via SWR', () => {
-    render(<UserManagement />);
-    expect(mockUseSWRFetch).toHaveBeenCalledWith('/api/users');
-  });
+  it('shows empty state when no users', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true, data: [] }),
+    });
 
-  it('shows empty state when no users', () => {
-    mockUseSWRFetch.mockReturnValue({
-      data: { success: true, data: [] },
-      error: undefined,
-      isLoading: false,
-      isValidating: false,
-      mutate: mockMutate,
-    } as ReturnType<typeof useSWRFetch>);
-
-    render(<UserManagement />);
-    expect(screen.getByText('Nenhum usuario encontrado')).toBeInTheDocument();
+    render(<UserManagement />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText('Nenhum usuario encontrado')).toBeInTheDocument();
+    });
   });
 });
