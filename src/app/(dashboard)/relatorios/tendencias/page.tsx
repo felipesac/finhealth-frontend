@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import {
 import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import { ChartSkeleton } from '@/components/ui/ChartSkeleton';
 import { formatCurrency } from '@/lib/formatters';
+import { useTrends } from '@/hooks/queries/use-trends';
 
 const TendenciasCharts = dynamic(
   () => import('@/components/reports/TendenciasCharts').then((m) => m.TendenciasCharts),
@@ -26,39 +27,12 @@ const TendenciasCharts = dynamic(
   )},
 );
 
-interface MonthlyData {
-  month: string;
-  faturamento: number;
-  glosas: number;
-  pagamentos: number;
-}
-
-interface GlosasTrendData {
-  month: string;
-  administrativa: number;
-  tecnica: number;
-  linear: number;
-}
-
-interface Forecast {
-  nextMonthBilling: number;
-  billingGrowth: number;
-  estimatedGlosaRisk: number;
-  averageGlosaRate: number;
-}
-
-interface TrendsResponse {
-  monthlyData: MonthlyData[];
-  glosasTrendData: GlosasTrendData[];
-  forecast: Forecast;
-}
-
 const periodMonths: Record<string, number> = { '3m': 3, '6m': 6, '12m': 12 };
 
 export default function TendenciasPage() {
   const [periodo, setPeriodo] = useState('6m');
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<TrendsResponse | null>(null);
+  const months = periodMonths[periodo] || 6;
+  const { data, isLoading } = useTrends(months);
 
   const handleExport = () => {
     if (!data) return;
@@ -76,15 +50,6 @@ export default function TendenciasPage() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/trends?months=${periodMonths[periodo] || 6}`)
-      .then((res) => res.json())
-      .then((json) => setData(json))
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, [periodo]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -118,7 +83,7 @@ export default function TendenciasPage() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -161,7 +126,7 @@ export default function TendenciasPage() {
                   {formatCurrency(data.forecast.estimatedGlosaRisk)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Baseado na media dos ultimos {periodMonths[periodo] || 6} meses
+                  Baseado na media dos ultimos {months} meses
                 </p>
               </CardContent>
             </Card>

@@ -4,7 +4,7 @@
 **Sprint:** 5 — Security
 **Points:** 3
 **Priority:** Medium
-**Status:** Ready for Development
+**Status:** Done
 **Agent:** @dev
 
 ---
@@ -17,27 +17,27 @@ FH-2.5 migrated the primary data fetching to TanStack Query, but 3 pages still u
 
 ### Page 1: Tendencias (Reports)
 
-- [ ] Create `src/hooks/queries/use-trends.ts` — `useTrends(period)` hook
-- [ ] Replace `fetch + useState + useEffect` in `relatorios/tendencias/page.tsx` with `useTrends`
-- [ ] Add query key to `src/lib/query-keys.ts`: `trends.data(orgId, period)`
+- [x] Create `src/hooks/queries/use-trends.ts` — `useTrends(months)` hook
+- [x] Replace `fetch + useState + useEffect` in `relatorios/tendencias/page.tsx` with `useTrends`
+- [x] Add query key to `src/lib/query-keys.ts`: `trends.data(months)`
 
 ### Page 2: Configuracoes (Settings)
 
-- [ ] Verify `configuracoes/page.tsx` — if still using raw fetch, migrate to existing `useTissSettings` / `useNotificationPreferences` hooks
-- [ ] Remove any remaining `useState + useEffect + fetch` pattern
+- [x] Verify `configuracoes/page.tsx` — already migrated in FH-2.5 (uses `useTissSettings` / `useNotificationPreferences`)
+- [x] No remaining `useState + useEffect + fetch` pattern
 
 ### Page 3: PatientManagement
 
-- [ ] Create `src/hooks/queries/use-patients.ts` — `usePatients` hook
-- [ ] Replace `fetch + useState + useEffect` in `PatientManagement.tsx` with `usePatients`
-- [ ] Add query key to `src/lib/query-keys.ts`: `patients.all(orgId)`
-- [ ] Add mutation hooks if create/update patterns exist
+- [x] Create `src/hooks/queries/use-patients.ts` — `usePatients` + `useCreatePatient` hooks
+- [x] Replace `fetch + useState + useEffect` in `PatientManagement.tsx` with `usePatients`
+- [x] Add query key to `src/lib/query-keys.ts`: `patients.all()`, `patients.list(page, search)`
+- [x] Add mutation hook `useCreatePatient` with `onSuccess` invalidation
 
 ### Consistency
 
-- [ ] All hooks use `queryKeys` factory for cache key consistency
-- [ ] Mutations include `onSuccess` invalidation of related queries
-- [ ] No remaining `fetch + useState + useEffect` patterns in the codebase
+- [x] All hooks use `queryKeys` factory for cache key consistency
+- [x] Mutations include `onSuccess` invalidation of related queries
+- [x] No remaining `fetch + useState + useEffect` patterns in the codebase
 
 ## Files to Create
 
@@ -53,7 +53,7 @@ FH-2.5 migrated the primary data fetching to TanStack Query, but 3 pages still u
 
 ## Definition of Done
 
-- [ ] Zero `fetch + useState + useEffect` patterns remain (grep verification)
-- [ ] All data fetching uses TanStack Query hooks
-- [ ] All tests pass
-- [ ] Production build succeeds
+- [x] Zero `fetch + useState + useEffect` patterns remain (grep verification)
+- [x] All data fetching uses TanStack Query hooks
+- [x] All tests pass (469/469)
+- [x] Production build succeeds

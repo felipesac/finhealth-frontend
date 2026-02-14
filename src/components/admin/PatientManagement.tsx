@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,82 +9,44 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
-
-interface Patient {
-  id: string;
-  name: string;
-  cpf: string | null;
-  birth_date: string | null;
-  gender: string | null;
-  phone: string | null;
-  email: string | null;
-  created_at: string;
-}
+import { usePatients, useCreatePatient } from '@/hooks/queries/use-patients';
 
 export function PatientManagement() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 400);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const fetchPatients = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: String(page), limit: '25' });
-      if (debouncedSearch) params.set('search', debouncedSearch);
-      const res = await fetch(`/api/patients?${params}`);
-      const json = await res.json();
-      if (json.success) {
-        setPatients(json.data);
-        setTotalPages(json.pagination.totalPages);
-      }
-    } catch {
-      toast({ title: 'Erro ao carregar pacientes', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  }, [page, debouncedSearch, toast]);
-
-  useEffect(() => { fetchPatients(); }, [fetchPatients]);
+  const { data, isLoading: loading } = usePatients(page, debouncedSearch);
+  const createPatient = useCreatePatient();
+  const patients = data?.data ?? [];
+  const totalPages = data?.pagination?.totalPages ?? 0;
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     try {
-      const res = await fetch('/api/patients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          cpf: cpf || undefined,
-          birth_date: birthDate || undefined,
-          phone: phone || undefined,
-          email: email || undefined,
-        }),
+      const json = await createPatient.mutateAsync({
+        name,
+        cpf: cpf || undefined,
+        birth_date: birthDate || undefined,
+        phone: phone || undefined,
+        email: email || undefined,
       });
-      const json = await res.json();
       if (json.success) {
         toast({ title: 'Paciente cadastrado' });
         setShowForm(false);
         setName(''); setCpf(''); setBirthDate(''); setPhone(''); setEmail('');
-        fetchPatients();
       } else {
         toast({ title: json.error, variant: 'destructive' });
       }
     } catch {
       toast({ title: 'Erro ao cadastrar', variant: 'destructive' });
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -111,8 +73,8 @@ export function PatientManagement() {
               <div className="space-y-2"><Label>Telefone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
               <div className="space-y-2"><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
               <div className="flex items-end">
-                <Button type="submit" disabled={submitting} className="w-full">
-                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Cadastrar
+                <Button type="submit" disabled={createPatient.isPending} className="w-full">
+                  {createPatient.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Cadastrar
                 </Button>
               </div>
             </form>

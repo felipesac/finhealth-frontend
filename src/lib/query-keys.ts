@@ -34,4 +34,12 @@ export const queryKeys = {
     tiss: () => ['settings', 'tiss'] as const,
     notificationPrefs: () => ['settings', 'notification-prefs'] as const,
   },
+  trends: {
+    data: (months: number) => ['trends', months] as const,
+  },
+  patients: {
+    all: () => ['patients'] as const,
+    list: (page: number, search?: string) =>
+      ['patients', 'list', page, search] as const,
+  },
 };
