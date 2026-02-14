@@ -16,6 +16,11 @@ export type Permission =
   | 'notifications:read' | 'notifications:write'
   | 'certificates:read' | 'certificates:write'
   | 'sus:read' | 'sus:write'
+  | 'squad:billing:read' | 'squad:billing:write'
+  | 'squad:audit:read' | 'squad:audit:write'
+  | 'squad:reconciliation:read' | 'squad:reconciliation:write'
+  | 'squad:cashflow:read' | 'squad:cashflow:write'
+  | 'squad:route:write'
   | 'admin:all';
 
 const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
@@ -33,6 +38,11 @@ const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'notifications:read', 'notifications:write',
     'certificates:read', 'certificates:write',
     'sus:read', 'sus:write',
+    'squad:billing:read', 'squad:billing:write',
+    'squad:audit:read', 'squad:audit:write',
+    'squad:reconciliation:read', 'squad:reconciliation:write',
+    'squad:cashflow:read', 'squad:cashflow:write',
+    'squad:route:write',
   ],
   auditor: [
     'accounts:read',
@@ -43,11 +53,16 @@ const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'reports:read',
     'audit:read',
     'notifications:read',
+    'squad:audit:read', 'squad:audit:write',
+    'squad:billing:read',
+    'squad:reconciliation:read',
+    'squad:cashflow:read',
   ],
   tiss_operator: [
     'accounts:read',
     'tiss:read', 'tiss:write',
     'notifications:read',
+    'squad:billing:read', 'squad:billing:write',
   ],
 };
 
