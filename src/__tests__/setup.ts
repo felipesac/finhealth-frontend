@@ -2,6 +2,23 @@ import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 import messages from '../../messages/pt-BR.json';
 
+// Polyfill methods missing in jsdom (needed by Radix UI)
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
+}
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = vi.fn();
+}
+if (!Element.prototype.releasePointerCapture) {
+  Element.prototype.releasePointerCapture = vi.fn();
+}
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = vi.fn();
+}
+if (!window.HTMLElement.prototype.scrollIntoView) {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+}
+
 // Resolve a nested key like "statusLabels.pending" from a messages object
 function resolve(obj: Record<string, unknown>, key: string): string {
   const parts = key.split('.');

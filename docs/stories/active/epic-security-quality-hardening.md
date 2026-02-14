@@ -3,7 +3,7 @@
 **Epic ID:** FINHEALTH-EPIC-3
 **Origin:** Post-Brownfield Audit (2026-02-14)
 **Priority:** High
-**Status:** Ready for Development
+**Status:** Done
 **Created:** 2026-02-14
 **Owner:** @po (Pax)
 
@@ -26,12 +26,12 @@ Address security vulnerabilities (4 High CVEs in Next.js 14), missing security h
 
 ## Success Criteria
 
-- [ ] Zero npm audit vulnerabilities (High+)
-- [ ] Security headers on all responses (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
-- [ ] All data fetching uses TanStack Query (no raw fetch+useState patterns)
-- [ ] All custom hooks have unit tests
-- [ ] Coverage tooling configured and reporting
-- [ ] All existing tests continue passing
+- [x] Zero npm audit vulnerabilities (High+)
+- [x] Security headers on all responses (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
+- [x] All data fetching uses TanStack Query (no raw fetch+useState patterns)
+- [x] All custom hooks have unit tests
+- [x] Coverage tooling configured and reporting
+- [x] All existing tests continue passing (565/565)
 
 ## Stories
 
@@ -41,7 +41,7 @@ Address security vulnerabilities (4 High CVEs in Next.js 14), missing security h
 | FH-5.2 | Add security headers to middleware | Sprint 5 | 2 | High | Done |
 | FH-5.3 | Migrate remaining pages to TanStack Query | Sprint 5 | 3 | Medium | Done |
 | FH-5.4 | Add unit tests for custom hooks | Sprint 6 | 5 | Medium | Done |
-| FH-5.5 | Add tests for modal and filter components | Sprint 6 | 3 | Medium | Ready for Development |
+| FH-5.5 | Add tests for modal and filter components | Sprint 6 | 3 | Medium | Done |
 | FH-5.6 | Setup test coverage tooling | Sprint 6 | 1 | Low | Done |
 
 **Total Story Points:** 22
