@@ -1,30 +1,77 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useDropzone } from 'react-dropzone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
 import { Upload, FileText, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+const tissFormSchema = z.object({
+  accountId: z.string().min(1, 'Selecione uma conta medica'),
+});
+
+type TissFormValues = z.infer<typeof tissFormSchema>;
 
 interface ValidationResult {
   isValid: boolean;
   errors: string[];
   warnings: string[];
+  guideNumber?: string;
 }
 
-export function TissUploadForm() {
+interface AccountOption {
+  id: string;
+  account_number: string;
+  patient_name?: string;
+}
+
+interface TissUploadFormProps {
+  accounts: AccountOption[];
+}
+
+function readFileAsText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Falha ao ler o arquivo'));
+    reader.readAsText(file, 'UTF-8');
+  });
+}
+
+export function TissUploadForm({ accounts }: TissUploadFormProps) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const form = useForm<TissFormValues>({
+    resolver: zodResolver(tissFormSchema),
+    defaultValues: { accountId: '' },
+  });
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const xmlFile = acceptedFiles[0];
     if (xmlFile) {
       setFile(xmlFile);
       setValidationResult(null);
+      setUploadError(null);
     }
   }, []);
 
@@ -32,34 +79,75 @@ export function TissUploadForm() {
     onDrop,
     accept: { 'text/xml': ['.xml'], 'application/xml': ['.xml'] },
     maxFiles: 1,
+    maxSize: MAX_FILE_SIZE,
+    onDropRejected: (rejections) => {
+      const error = rejections[0]?.errors[0];
+      if (error?.code === 'file-too-large') {
+        toast({
+          title: 'Arquivo muito grande',
+          description: 'O tamanho maximo permitido e 5MB.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Arquivo invalido',
+          description: error?.message || 'Selecione um arquivo XML valido.',
+          variant: 'destructive',
+        });
+      }
+    },
   });
 
   const handleUpload = async () => {
-    if (!file) return;
+    const isValid = await form.trigger('accountId');
+    if (!isValid || !file) return;
 
+    const selectedAccountId = form.getValues('accountId');
     setUploading(true);
     setProgress(0);
+    setValidationResult(null);
+    setUploadError(null);
 
-    // Simulate upload progress
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => Math.min(prev + 10, 90));
-    }, 200);
+    try {
+      // Stage 1: Read file (0-30%)
+      setProgress(10);
+      const xmlContent = await readFileAsText(file);
+      setProgress(30);
 
-    // Simulate validation (in production, this would be an API call)
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Stage 2: Upload to server (30-70%)
+      setProgress(40);
+      const response = await fetch('/api/tiss/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ xml: xmlContent, accountId: selectedAccountId }),
+      });
+      setProgress(70);
 
-    clearInterval(progressInterval);
-    setProgress(100);
+      // Stage 3: Process response (70-100%)
+      setProgress(85);
+      const result = await response.json();
+      setProgress(100);
 
-    // Simulated validation result
-    setValidationResult({
-      isValid: true,
-      errors: [],
-      warnings: ['Recomenda-se incluir o codigo CID no procedimento 1'],
-    });
+      if (!response.ok || result.success === false) {
+        setUploadError(result.error || `Erro ${response.status}`);
+        return;
+      }
 
-    setUploading(false);
+      setValidationResult({
+        isValid: result.isValid ?? true,
+        errors: result.errors || [],
+        warnings: result.warnings || [],
+        guideNumber: result.guideNumber,
+      });
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      setUploadError(err.message || 'Erro de conexao com o servidor');
+    } finally {
+      setUploading(false);
+    }
   };
+
+  const canSubmit = file && form.getValues('accountId') && !uploading;
 
   return (
     <Card>
@@ -70,6 +158,33 @@ export function TissUploadForm() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <Form {...form}>
+          <FormField
+            control={form.control}
+            name="accountId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Conta Medica</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a conta medica" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.account_number} — {account.patient_name || 'Sem paciente'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </Form>
+
         <div
           {...getRootProps()}
           className={cn(
@@ -89,7 +204,7 @@ export function TissUploadForm() {
                 Arraste um arquivo XML ou clique para selecionar
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Suporta TISS versao 3.05.00
+                Suporta TISS versao 3.05.00 (max 5MB)
               </p>
             </div>
           )}
@@ -104,13 +219,22 @@ export function TissUploadForm() {
                 ({(file.size / 1024).toFixed(1)} KB)
               </span>
             </div>
-            <Button onClick={handleUpload} disabled={uploading} size="sm">
+            <Button onClick={handleUpload} disabled={!canSubmit} size="sm">
               {uploading ? 'Processando...' : 'Validar e Enviar'}
             </Button>
           </div>
         )}
 
-        {uploading && <Progress value={progress} className="h-2" />}
+        {uploading && (
+          <Progress value={progress} className="h-2" aria-label="Progresso do upload" />
+        )}
+
+        {uploadError && (
+          <div className="flex items-center gap-2 rounded-md bg-red-50 p-4 text-red-700" role="alert" aria-live="polite">
+            <XCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <span className="text-sm">{uploadError}</span>
+          </div>
+        )}
 
         {validationResult && (
           <div className="space-y-2 rounded-md bg-muted p-4">
@@ -126,6 +250,12 @@ export function TissUploadForm() {
                   : 'Erros encontrados na validacao'}
               </span>
             </div>
+
+            {validationResult.guideNumber && (
+              <p className="text-sm text-muted-foreground">
+                Guia: <span className="font-mono font-medium">{validationResult.guideNumber}</span>
+              </p>
+            )}
 
             {validationResult.errors.length > 0 && (
               <div className="mt-2">

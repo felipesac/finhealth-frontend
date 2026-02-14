@@ -12,6 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/lib/formatters';
+import { toast } from '@/hooks/use-toast';
 import { Eye, Download } from 'lucide-react';
 import type { MedicalAccount } from '@/types';
 
@@ -75,7 +76,25 @@ export function TissGuidesList({ accounts }: TissGuidesListProps) {
                       <Eye className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <Button variant="ghost" size="icon">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      if (!account.tiss_xml) {
+                        toast({ title: 'XML nao disponivel para esta guia', variant: 'destructive' });
+                        return;
+                      }
+                      const blob = new Blob([account.tiss_xml], { type: 'application/xml' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `tiss-guia-${account.tiss_guide_number || account.id}.xml`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
                     <Download className="h-4 w-4" />
                   </Button>
                 </div>

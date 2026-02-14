@@ -1,10 +1,17 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+
+export const metadata: Metadata = {
+  title: 'Visualizador TISS | FinHealth',
+  description: 'Visualizacao de guia TISS',
+};
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Download, Copy } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { TissXmlActions } from '@/components/tiss/TissXmlActions';
 import type { MedicalAccount } from '@/types';
 
 interface PageProps {
@@ -57,12 +64,7 @@ export default async function TissViewerPage({ params }: PageProps) {
           >
             {account.tiss_validation_status || 'Pendente'}
           </Badge>
-          <Button variant="outline" size="icon">
-            <Copy className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon">
-            <Download className="h-4 w-4" />
-          </Button>
+          <TissXmlActions xml={account.tiss_xml!} guideNumber={account.tiss_guide_number} />
         </div>
       </div>
 

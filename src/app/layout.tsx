@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
+import { ThemeProvider } from "@/components/theme-provider";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
@@ -15,22 +19,57 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "FinHealth - Sistema de Gestao Financeira Hospitalar",
-  description: "Sistema de gestao financeira para faturamento hospitalar, TISS, glosas e conciliacao",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://finhealth-frontend.vercel.app'),
+  title: {
+    default: 'FinHealth - Gestao Financeira de Saude',
+    template: '%s | FinHealth',
+  },
+  description: 'Sistema de gestao financeira para operadoras de saude. Controle de contas medicas, glosas, pagamentos e faturamento TISS/SUS.',
+  icons: {
+    icon: '/favicon.svg',
+  },
+  openGraph: {
+    title: 'FinHealth - Gestao Financeira de Saude',
+    description: 'Sistema de gestao financeira para operadoras de saude. Controle de contas medicas, glosas, pagamentos e faturamento TISS/SUS.',
+    url: 'https://finhealth.app',
+    siteName: 'FinHealth',
+    images: [{ url: '/og-image.svg', width: 1200, height: 630, alt: 'FinHealth' }],
+    locale: 'pt_BR',
+    type: 'website',
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+  manifest: '/manifest.json',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="pt-BR">
+    <html lang={locale} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <NextIntlClientProvider messages={messages}>
+            <QueryProvider>
+              {children}
+            </QueryProvider>
+          </NextIntlClientProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

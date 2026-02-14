@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { createClient } from '@/lib/supabase/server';
+import { checkPermission } from '@/lib/rbac';
 
 // Common TUSS procedures data
 const TUSS_PROCEDURES = [
@@ -66,7 +62,7 @@ const TUSS_PROCEDURES = [
   { code: '40101010', description: 'Eletrocardiograma (ECG)', chapter: 'Procedimentos Diagnosticos', group_name: 'Metodos Graficos', procedure_type: 'exame', unit_price: 35.00 },
   { code: '40101029', description: 'Holter 24 horas', chapter: 'Procedimentos Diagnosticos', group_name: 'Metodos Graficos', procedure_type: 'exame', unit_price: 180.00 },
   { code: '40101045', description: 'Teste ergometrico', chapter: 'Procedimentos Diagnosticos', group_name: 'Metodos Graficos', procedure_type: 'exame', unit_price: 200.00 },
-  { code: '40102017', description: 'Ecocardiograma transtorácico', chapter: 'Procedimentos Diagnosticos', group_name: 'Metodos Graficos', procedure_type: 'exame', unit_price: 250.00 },
+  { code: '40102017', description: 'Ecocardiograma transtoracico', chapter: 'Procedimentos Diagnosticos', group_name: 'Metodos Graficos', procedure_type: 'exame', unit_price: 250.00 },
 
   // Endoscopia
   { code: '40201015', description: 'Endoscopia digestiva alta', chapter: 'Procedimentos Diagnosticos', group_name: 'Endoscopia', procedure_type: 'exame', unit_price: 350.00 },
@@ -89,10 +85,13 @@ const TUSS_PROCEDURES = [
 
 export async function POST() {
   try {
-    // First, try to create the table if it doesn't exist
-    // We'll use upsert to handle both insert and update cases
+    const supabase = await createClient();
+    const auth = await checkPermission(supabase, 'admin:all');
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('tuss_procedures')
       .upsert(
         TUSS_PROCEDURES.map(proc => ({
@@ -105,7 +104,6 @@ export async function POST() {
       .select();
 
     if (error) {
-      // If table doesn't exist, we need to create it first
       if (error.code === '42P01') {
         return NextResponse.json(
           {

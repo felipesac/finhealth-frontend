@@ -48,7 +48,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse TISS XML and extract procedures\nconst xml = $input.item.json.body.xml;\nconst accountId = $input.item.json.body.accountId;\n\n// Basic XML parsing - extract procedure codes\nconst procedureCodes = [];\nconst codeRegex = /<codigoProcedimento>([0-9]+)<\\/codigoProcedimento>/g;\nlet match;\nwhile ((match = codeRegex.exec(xml)) !== null) {\n  procedureCodes.push(match[1]);\n}\n\n// Extract guide number\nconst guideMatch = xml.match(/<numeroGuiaPrestador>([^<]+)<\\/numeroGuiaPrestador>/);\nconst guideNumber = guideMatch ? guideMatch[1] : null;\n\n// Extract total value\nconst totalMatch = xml.match(/<valorTotalGeral>([0-9.]+)<\\/valorTotalGeral>/);\nconst totalValue = totalMatch ? parseFloat(totalMatch[1]) : 0;\n\nreturn {\n  accountId,\n  guideNumber,\n  procedureCodes,\n  totalValue,\n  xml,\n  timestamp: new Date().toISOString()\n};"
+        "jsCode": "// Parse TISS XML and extract procedures\nconst xml = $input.item.json.body.xml;\nconst accountId = $input.item.json.body.accountId;\n\n// Basic XML parsing - extract procedure codes (handles ans: namespace)\nconst procedureCodes = [];\nconst codeRegex = /<(?:\\w+:)?codigoProcedimento>([0-9]+)<\\/(?:\\w+:)?codigoProcedimento>/g;\nlet match;\nwhile ((match = codeRegex.exec(xml)) !== null) {\n  procedureCodes.push(match[1]);\n}\n\n// Extract guide number\nconst guideMatch = xml.match(/<(?:\\w+:)?numeroGuiaPrestador>([^<]+)<\\/(?:\\w+:)?numeroGuiaPrestador>/);\nconst guideNumber = guideMatch ? guideMatch[1] : null;\n\n// Extract total value\nconst totalMatch = xml.match(/<(?:\\w+:)?valorTotalGeral>([0-9.]+)<\\/(?:\\w+:)?valorTotalGeral>/);\nconst totalValue = totalMatch ? parseFloat(totalMatch[1]) : 0;\n\nreturn {\n  accountId,\n  guideNumber,\n  procedureCodes,\n  totalValue,\n  xml,\n  timestamp: new Date().toISOString()\n};"
       },
       "id": "parse-xml",
       "name": "Parse TISS XML",
@@ -90,7 +90,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const inputCodes = $('Parse TISS XML').item.json.procedureCodes;\nconst validCodes = $input.item.json.map(p => p.code);\n\nconst invalidCodes = inputCodes.filter(code => !validCodes.includes(code));\nconst validProcedures = $input.item.json;\n\nconst isValid = invalidCodes.length === 0;\nconst errors = invalidCodes.map(code => `Codigo TUSS invalido: ${code}`);\n\nreturn {\n  isValid,\n  errors,\n  validProcedures,\n  invalidCodes,\n  accountId: $('Parse TISS XML').item.json.accountId,\n  guideNumber: $('Parse TISS XML').item.json.guideNumber,\n  totalValue: $('Parse TISS XML').item.json.totalValue\n};"
+        "jsCode": "const inputCodes = $('Parse TISS XML').item.json.procedureCodes;\nconst allItems = $input.all();\nconst validCodes = allItems.map(item => item.json.code);\n\nconst invalidCodes = inputCodes.filter(code => !validCodes.includes(code));\nconst validProcedures = allItems.map(item => item.json);\n\nconst isValid = invalidCodes.length === 0;\nconst errors = invalidCodes.map(code => `Codigo TUSS invalido: ${code}`);\n\nreturn {\n  isValid,\n  errors,\n  validProcedures,\n  invalidCodes,\n  accountId: $('Parse TISS XML').item.json.accountId,\n  guideNumber: $('Parse TISS XML').item.json.guideNumber,\n  totalValue: $('Parse TISS XML').item.json.totalValue\n};"
       },
       "id": "check-validation",
       "name": "Check Validation Result",
@@ -100,6 +100,7 @@
     },
     {
       "parameters": {
+        "method": "PATCH",
         "url": "https://zzxdvmuxzzopqvxotdeb.supabase.co/rest/v1/medical_accounts",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
@@ -115,11 +116,16 @@
             }
           ]
         },
-        "options": {
-          "redirect": {
-            "redirect": {}
-          }
-        }
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
       },
       "id": "update-account",
       "name": "Update Account Status",
@@ -136,7 +142,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { success: true, isValid: $json.isValid, errors: $json.errors, guideNumber: $json.guideNumber } }}"
+        "responseBody": "={{ { success: true, isValid: $('Check Validation Result').item.json.isValid, errors: $('Check Validation Result').item.json.errors, guideNumber: $('Check Validation Result').item.json.guideNumber } }}"
       },
       "id": "respond-success",
       "name": "Respond Success",

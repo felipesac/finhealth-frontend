@@ -12,19 +12,35 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, Bell } from 'lucide-react';
+import { LogOut, User, Menu } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
+import { toast } from '@/hooks/use-toast';
+import { useTranslations } from 'next-intl';
 
 interface HeaderProps {
   userEmail?: string;
+  onMobileMenuToggle?: () => void;
 }
 
-export function Header({ userEmail }: HeaderProps) {
+export function Header({ userEmail, onMobileMenuToggle }: HeaderProps) {
   const router = useRouter();
   const supabase = createClient();
+  const t = useTranslations('header');
+  const tAuth = useTranslations('auth');
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      router.push('/login');
+    } catch {
+      toast({
+        title: t('signOutError'),
+        description: t('signOutErrorDescription'),
+        variant: 'destructive',
+      });
+    }
   };
 
   const initials = userEmail
@@ -32,42 +48,59 @@ export function Header({ userEmail }: HeaderProps) {
     : 'US';
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-6">
-      <div className="flex items-center gap-4">
-        <h2 className="text-lg font-semibold">Sistema de Gestao Financeira</h2>
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/60 bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6 lg:px-8">
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          aria-label={t('openMenu')}
+          onClick={onMobileMenuToggle}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <h2 className="hidden text-sm font-medium text-muted-foreground sm:block">
+          {t('systemName')}
+        </h2>
       </div>
 
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5" />
-        </Button>
+      <div className="flex items-center gap-1 sm:gap-2">
+        <ThemeToggle />
+
+        <NotificationDropdown />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback>{initials}</AvatarFallback>
+            <Button
+              variant="ghost"
+              className="relative h-9 w-9 rounded-full"
+              aria-label={t('userMenu')}
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary/10 text-xs font-medium text-primary">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Conta</p>
+                <p className="text-sm font-medium leading-none">{t('account')}</p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {userEmail}
                 </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/configuracoes')}>
               <User className="mr-2 h-4 w-4" />
-              <span>Perfil</span>
+              <span>{t('profile')}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Sair</span>
+              <span>{tAuth('logout')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
