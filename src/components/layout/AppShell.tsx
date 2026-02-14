@@ -8,7 +8,7 @@ import { Header } from './Header';
 import { Breadcrumbs } from './Breadcrumbs';
 import { useUIStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import dynamic from 'next/dynamic';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
@@ -71,6 +71,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
       {/* Mobile sidebar drawer */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-72 p-0">
+          <SheetTitle className="sr-only">Menu de navegacao</SheetTitle>
           <div className="flex h-14 items-center border-b border-border/60 px-5">
             <span className="text-lg font-semibold tracking-tight text-primary">
               FinHealth

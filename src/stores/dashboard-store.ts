@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface DashboardWidget {
   id: string;
@@ -14,6 +14,36 @@ const defaultWidgets: DashboardWidget[] = [
   { id: 'recent-accounts', label: 'Contas Recentes', visible: true },
   { id: 'quick-actions', label: 'Acoes Rapidas', visible: true },
 ];
+
+const safeLocalStorage = () => {
+  const storage: Storage = {
+    length: 0,
+    clear: () => { /* noop */ },
+    key: () => null,
+    getItem: (name: string) => {
+      try {
+        return localStorage.getItem(name);
+      } catch {
+        return null;
+      }
+    },
+    setItem: (name: string, value: string) => {
+      try {
+        localStorage.setItem(name, value);
+      } catch {
+        // Safari private mode or quota exceeded
+      }
+    },
+    removeItem: (name: string) => {
+      try {
+        localStorage.removeItem(name);
+      } catch {
+        // ignore
+      }
+    },
+  };
+  return storage;
+};
 
 interface DashboardStore {
   widgets: DashboardWidget[];
@@ -41,6 +71,18 @@ export const useDashboardStore = create<DashboardStore>()(
         }),
       resetWidgets: () => set({ widgets: defaultWidgets }),
     }),
-    { name: 'finhealth-dashboard' }
+    {
+      name: 'finhealth-dashboard',
+      version: 1,
+      storage: createJSONStorage(safeLocalStorage),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        const valid = Array.isArray(state.widgets) &&
+          state.widgets.every((w) => w && typeof w.id === 'string' && typeof w.visible === 'boolean');
+        if (!valid) {
+          state.widgets = defaultWidgets;
+        }
+      },
+    }
   )
 );

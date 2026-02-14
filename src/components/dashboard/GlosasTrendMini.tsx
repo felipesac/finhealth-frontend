@@ -14,7 +14,7 @@ interface GlosasTrendMiniProps {
 }
 
 function MiniTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
-  if (!active || !payload) return null;
+  if (!active || !payload || !payload[0]) return null;
   return (
     <div className="rounded border bg-background px-2 py-1 shadow-sm text-xs">
       <p>{label}: {formatCurrency(payload[0].value)}</p>
