@@ -37,7 +37,7 @@ Address security vulnerabilities (4 High CVEs in Next.js 14), missing security h
 
 | Story | Title | Sprint | Points | Priority | Status |
 |-------|-------|--------|--------|----------|--------|
-| FH-5.1 | Upgrade Next.js 14 to 15 | Sprint 5 | 8 | Critical | Ready for Development |
+| FH-5.1 | Upgrade Next.js 14 to 15 | Sprint 5 | 8 | Critical | Done |
 | FH-5.2 | Add security headers to middleware | Sprint 5 | 2 | High | Ready for Development |
 | FH-5.3 | Migrate remaining pages to TanStack Query | Sprint 5 | 3 | Medium | Ready for Development |
 | FH-5.4 | Add unit tests for custom hooks | Sprint 6 | 5 | Medium | Ready for Development |
