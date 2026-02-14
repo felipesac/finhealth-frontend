@@ -42,7 +42,7 @@ Address security vulnerabilities (4 High CVEs in Next.js 14), missing security h
 | FH-5.3 | Migrate remaining pages to TanStack Query | Sprint 5 | 3 | Medium | Done |
 | FH-5.4 | Add unit tests for custom hooks | Sprint 6 | 5 | Medium | Ready for Development |
 | FH-5.5 | Add tests for modal and filter components | Sprint 6 | 3 | Medium | Ready for Development |
-| FH-5.6 | Setup test coverage tooling | Sprint 6 | 1 | Low | Ready for Development |
+| FH-5.6 | Setup test coverage tooling | Sprint 6 | 1 | Low | Done |
 
 **Total Story Points:** 22
 
