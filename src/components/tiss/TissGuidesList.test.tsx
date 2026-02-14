@@ -16,6 +16,7 @@ vi.mock('@/hooks/use-toast', () => ({
 const mockAccounts: MedicalAccount[] = [
   {
     id: 'a1',
+    organization_id: 'org-1',
     account_number: 'CT-001',
     account_type: 'internacao',
     status: 'sent',
@@ -32,6 +33,7 @@ const mockAccounts: MedicalAccount[] = [
   },
   {
     id: 'a2',
+    organization_id: 'org-1',
     account_number: 'CT-002',
     account_type: 'ambulatorial',
     status: 'pending',

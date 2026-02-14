@@ -20,6 +20,7 @@ vi.mock('@/hooks/use-toast', () => ({
 const mockGlosas: Glosa[] = [
   {
     id: 'g1',
+    organization_id: 'org-1',
     medical_account_id: 'a1',
     glosa_code: 'GL-001',
     glosa_description: 'Guia incompleta',
@@ -32,7 +33,7 @@ const mockGlosas: Glosa[] = [
     created_at: '2024-06-15T10:00:00Z',
     updated_at: '2024-06-15T10:00:00Z',
     medical_account: {
-      id: 'a1', account_number: 'CT-100', account_type: 'internacao',
+      id: 'a1', organization_id: 'org-1', account_number: 'CT-100', account_type: 'internacao',
       status: 'glosa', total_amount: 5000, approved_amount: 3800,
       glosa_amount: 1200, paid_amount: 0, metadata: {},
       created_at: '', updated_at: '',
@@ -40,6 +41,7 @@ const mockGlosas: Glosa[] = [
   },
   {
     id: 'g2',
+    organization_id: 'org-1',
     medical_account_id: 'a2',
     glosa_code: 'GL-002',
     glosa_type: 'tecnica',

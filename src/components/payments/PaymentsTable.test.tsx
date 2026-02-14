@@ -12,6 +12,7 @@ vi.mock('next/link', () => ({
 const mockPayments: Payment[] = [
   {
     id: 'pay-1',
+    organization_id: 'org-1',
     health_insurer_id: 'h1',
     payment_date: '2024-06-15',
     payment_reference: 'REF-001',
@@ -29,6 +30,7 @@ const mockPayments: Payment[] = [
   },
   {
     id: 'pay-2',
+    organization_id: 'org-1',
     health_insurer_id: 'h1',
     payment_date: '2024-06-14',
     payment_reference: 'REF-002',

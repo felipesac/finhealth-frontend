@@ -1,6 +1,33 @@
 // User roles for RBAC
 export type UserRole = 'admin' | 'finance_manager' | 'auditor' | 'tiss_operator';
 
+// Organization types (multi-tenant)
+export type OrganizationType = 'hospital' | 'ubs' | 'clinica';
+export type OrganizationPlan = 'basic' | 'professional' | 'enterprise';
+export type OrganizationMemberRole = 'admin' | 'billing' | 'auditor' | 'viewer';
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  type: OrganizationType;
+  plan: OrganizationPlan;
+  settings: Record<string, unknown>;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrganizationMember {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  role: OrganizationMemberRole;
+  invited_at: string;
+  accepted_at?: string;
+  organization?: Organization;
+}
+
 // Database entity types matching Supabase schema
 
 export type AccountType = 'internacao' | 'ambulatorial' | 'sadt' | 'honorarios';
@@ -73,6 +100,7 @@ export interface MedicalAccount {
   audit_score?: number;
   glosa_risk_score?: number;
   audit_issues?: Record<string, unknown>;
+  organization_id: string;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -82,6 +110,7 @@ export interface MedicalAccount {
   // Joined relations
   patient?: Patient;
   health_insurer?: HealthInsurer;
+  organization?: Organization;
 }
 
 export interface Procedure {
@@ -102,6 +131,7 @@ export interface Procedure {
   glosa_code?: string;
   glosa_reason?: string;
   appeal_status?: string;
+  organization_id: string;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -125,6 +155,7 @@ export interface Glosa {
   ai_recommendation?: string;
   success_probability?: number;
   priority_score?: number;
+  organization_id: string;
   created_at: string;
   updated_at: string;
   created_by?: string;
@@ -146,6 +177,7 @@ export interface Payment {
   reconciled_at?: string;
   payment_file_url?: string;
   payment_file_type?: string;
+  organization_id: string;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;

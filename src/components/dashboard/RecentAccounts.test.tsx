@@ -12,6 +12,7 @@ vi.mock('next/link', () => ({
 const mockAccounts: MedicalAccount[] = [
   {
     id: '1',
+    organization_id: 'org-1',
     account_number: 'CT-001',
     account_type: 'internacao',
     status: 'pending',
@@ -26,6 +27,7 @@ const mockAccounts: MedicalAccount[] = [
   },
   {
     id: '2',
+    organization_id: 'org-1',
     account_number: 'CT-002',
     account_type: 'ambulatorial',
     status: 'paid',
