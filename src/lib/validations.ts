@@ -265,6 +265,17 @@ export const createPatientSchema = z.object({
 
 export type CreatePatientInput = z.infer<typeof createPatientSchema>;
 
+export const updatePatientSchema = z.object({
+  name: z.string().min(1, 'Nome obrigatorio').optional(),
+  cpf: z.string().regex(/^\d{11}$|^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF invalido').optional().nullable(),
+  birth_date: z.string().optional().nullable(),
+  gender: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  email: z.string().email('Email invalido').optional().nullable().or(z.literal('')),
+});
+
+export type UpdatePatientInput = z.infer<typeof updatePatientSchema>;
+
 // ============================================
 // Procedure CRUD (API)
 // ============================================

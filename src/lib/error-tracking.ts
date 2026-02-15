@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 type Severity = 'fatal' | 'error' | 'warning' | 'info';
 
 interface ErrorContext {
@@ -17,25 +19,18 @@ export function captureException(error: unknown, context?: ErrorContext): void {
   const message = error instanceof Error ? error.message : String(error);
   const stack = error instanceof Error ? error.stack : undefined;
 
-  console.error('[error-tracking]', {
-    message,
-    stack,
-    ...context,
-    timestamp: new Date().toISOString(),
-  });
+  logger.error('[error-tracking] ' + message, error, context);
 }
 
 /**
  * Capture a message for error tracking.
  */
 export function captureMessage(message: string, severity: Severity = 'info', context?: ErrorContext): void {
-  const logFn = severity === 'fatal' || severity === 'error' ? console.error : console.warn;
-
-  logFn(`[error-tracking] [${severity}]`, {
-    message,
-    ...context,
-    timestamp: new Date().toISOString(),
-  });
+  if (severity === 'fatal' || severity === 'error') {
+    logger.error(`[error-tracking] [${severity}] ${message}`, undefined, context);
+  } else {
+    logger.warn(`[error-tracking] [${severity}] ${message}`, context);
+  }
 }
 
 /**
@@ -44,7 +39,7 @@ export function captureMessage(message: string, severity: Severity = 'info', con
 export function setUser(user: { id: string; email?: string } | null): void {
   // Replace with Sentry.setUser(user) when ready
   if (user) {
-    console.debug('[error-tracking] User set:', user.id);
+    logger.debug('[error-tracking] User set', { userId: user.id });
   }
 }
 

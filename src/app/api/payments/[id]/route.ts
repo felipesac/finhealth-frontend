@@ -5,6 +5,55 @@ import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
 import { checkPermission } from '@/lib/rbac';
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    const rlKey = getRateLimitKey(request, 'payments-detail');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
+    const supabase = await createClient();
+    const auth = await checkPermission(supabase, 'payments:read');
+    if (!auth.authorized) {
+      return NextResponse.json(
+        { success: false, error: auth.error },
+        { status: auth.status }
+      );
+    }
+
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*, health_insurer:health_insurers(id, name)')
+      .eq('id', id)
+      .eq('organization_id', auth.organizationId)
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json(
+        { success: false, error: 'Pagamento nao encontrado' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data });
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return NextResponse.json(
+      { success: false, error: err.message || 'Falha ao buscar pagamento' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

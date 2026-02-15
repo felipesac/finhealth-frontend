@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 export interface AuditEntry {
   action: string;
@@ -31,7 +32,7 @@ export function auditLog(
     .then(({ error }) => {
       if (error && error.code !== '42P01') {
         // 42P01 = table does not exist — ignore in dev
-        console.error('[audit] Failed to log:', error.message);
+        logger.error('[audit] Failed to log', error);
       }
     });
 }
@@ -70,7 +71,7 @@ export function auditRead(
     })
     .then(({ error }) => {
       if (error && error.code !== '42P01') {
-        console.error('[audit] Failed to log read:', error.message);
+        logger.error('[audit] Failed to log read', error);
       }
     });
 }

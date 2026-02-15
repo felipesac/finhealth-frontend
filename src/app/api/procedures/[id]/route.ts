@@ -5,6 +5,39 @@ import { checkPermission } from '@/lib/rbac';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
 import { updateProcedureSchema } from '@/lib/validations';
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const rlKey = getRateLimitKey(request, 'procedures-detail');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
+    if (!allowed) return NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 });
+
+    const supabase = await createClient();
+    const auth = await checkPermission(supabase, 'accounts:read');
+    if (!auth.authorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    }
+
+    const { data, error } = await supabase
+      .from('procedures')
+      .select('*')
+      .eq('id', id)
+      .eq('organization_id', auth.organizationId)
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json({ success: false, error: 'Procedimento nao encontrado' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data });
+  } catch {
+    return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 });
+  }
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
