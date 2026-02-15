@@ -196,3 +196,13 @@ export const routeRequestSchema = z.object({
 });
 
 export type RouteRequestInput = z.infer<typeof routeRequestSchema>;
+
+// ============================================================================
+// score-glosa-risk (auditor-agent)
+// ============================================================================
+
+export const scoreGlosaRiskSchema = z.object({
+  accountId: z.string().min(1, 'ID da conta obrigatorio'),
+});
+
+export type ScoreGlosaRiskInput = z.infer<typeof scoreGlosaRiskSchema>;

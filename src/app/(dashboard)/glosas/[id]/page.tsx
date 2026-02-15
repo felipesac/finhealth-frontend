@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { AppealForm } from '@/components/glosas/AppealForm';
+import { ScoreRiskButton } from '@/components/glosas/ScoreRiskButton';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { Glosa, AppealStatus, GlosaType } from '@/types';
 
@@ -145,6 +146,23 @@ export default async function GlosaDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
       </div>
+
+      {!glosa.ai_recommendation && glosa.medical_account_id && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              Analise de IA
+            </CardTitle>
+            <CardDescription>
+              Gere uma analise de risco e recomendacao automatica para esta glosa
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ScoreRiskButton accountId={glosa.medical_account_id} />
+          </CardContent>
+        </Card>
+      )}
 
       {glosa.ai_recommendation && (
         <Card>
