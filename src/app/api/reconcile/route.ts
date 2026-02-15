@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const { success: allowed } = await rateLimit(rlKey, { limit: 20, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
-        { error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
         { status: 429 }
       );
     }
@@ -19,13 +19,13 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'reconcile:write');
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
     const body = await request.json();
     const parsed = reconcileSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+      return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 });
     }
 
     const { paymentId, accountId } = parsed.data;
@@ -39,13 +39,13 @@ export async function POST(request: Request) {
       .single();
 
     if (paymentFetchError || !payment) {
-      return NextResponse.json({ error: 'Pagamento nao encontrado' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Pagamento nao encontrado' }, { status: 404 });
     }
 
     // Optimistic locking: reject if already fully matched
     if (payment.reconciliation_status === 'matched') {
       return NextResponse.json(
-        { error: 'Pagamento ja foi conciliado. Atualize a pagina.' },
+        { success: false, error: 'Pagamento ja foi conciliado. Atualize a pagina.' },
         { status: 409 }
       );
     }
@@ -59,14 +59,14 @@ export async function POST(request: Request) {
       .single();
 
     if (accountFetchError || !account) {
-      return NextResponse.json({ error: 'Conta nao encontrada' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Conta nao encontrada' }, { status: 404 });
     }
 
     const accountRemaining = account.total_amount - (account.paid_amount || 0);
     const amountToMatch = Math.min(accountRemaining, payment.unmatched_amount);
 
     if (amountToMatch <= 0) {
-      return NextResponse.json({ error: 'Nenhum valor disponivel para conciliacao' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Nenhum valor disponivel para conciliacao' }, { status: 400 });
     }
 
     const newMatched = (payment.matched_amount || 0) + amountToMatch;
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       if (rollbackError) {
         console.error('CRITICAL: Rollback failed for payment', paymentId, rollbackError);
         return NextResponse.json(
-          { error: 'Erro critico na conciliacao. Contate o administrador.' },
+          { success: false, error: 'Erro critico na conciliacao. Contate o administrador.' },
           { status: 500 }
         );
       }
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
   } catch (err: unknown) {
     const error = err as { message?: string };
     return NextResponse.json(
-      { error: error.message || 'Erro na conciliacao' },
+      { success: false, error: error.message || 'Erro na conciliacao' },
       { status: 500 }
     );
   }

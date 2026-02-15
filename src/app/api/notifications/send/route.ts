@@ -10,13 +10,13 @@ export async function POST(request: Request) {
     const rlKey = getRateLimitKey(request, 'notification-send');
     const { success: allowed } = await rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
     if (!allowed) {
-      return NextResponse.json({ error: 'Muitas requisicoes' }, { status: 429 });
+      return NextResponse.json({ success: false, error: 'Muitas requisicoes' }, { status: 429 });
     }
 
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'notifications:write');
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
 
     const body = await request.json();
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     };
 
     if (!type || !subject) {
-      return NextResponse.json({ error: 'type e subject sao obrigatorios' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'type e subject sao obrigatorios' }, { status: 400 });
     }
 
     const targetUserId = user_id || auth.userId;
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     // Get target user's preferences and email
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Usuario nao encontrado' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Usuario nao encontrado' }, { status: 404 });
     }
 
     const prefs = user.user_metadata?.notification_preferences || {};
@@ -78,6 +78,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, results });
   } catch (err: unknown) {
     const error = err as { message?: string };
-    return NextResponse.json({ error: error.message || 'Erro interno' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Erro interno' }, { status: 500 });
   }
 }

@@ -148,7 +148,7 @@ describe('tissUploadSchema', () => {
   });
 
   it('allows optional accountId', () => {
-    const result = tissUploadSchema.safeParse({ xml: '<xml/>', accountId: 'abc' });
+    const result = tissUploadSchema.safeParse({ xml: '<xml/>', accountId: '550e8400-e29b-41d4-a716-446655440000' });
     expect(result.success).toBe(true);
   });
 });

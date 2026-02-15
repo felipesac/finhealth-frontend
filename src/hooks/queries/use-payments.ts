@@ -33,6 +33,8 @@ export function usePayments(orgId: string, filters?: PaymentFilters) {
       return res.json();
     },
     enabled: !!orgId,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
   });
 }
 
@@ -46,6 +48,8 @@ export function usePayment(orgId: string, id: string) {
       return json.data;
     },
     enabled: !!orgId && !!id,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
   });
 }
 

@@ -76,7 +76,7 @@ export type ExportInput = z.infer<typeof exportSchema>;
 // ============================================
 export const tissUploadSchema = z.object({
   xml: z.string().min(1, 'XML obrigatorio'),
-  accountId: z.string().optional(),
+  accountId: z.string().uuid('ID da conta invalido').optional(),
 });
 
 export type TissUploadInput = z.infer<typeof tissUploadSchema>;
@@ -256,7 +256,7 @@ export type CreateInsurerInput = z.infer<typeof createInsurerSchema>;
 // ============================================
 export const createPatientSchema = z.object({
   name: z.string().min(1, 'Nome obrigatorio'),
-  cpf: z.string().max(14).optional(),
+  cpf: z.string().regex(/^\d{11}$|^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF invalido').optional().or(z.literal('')),
   birth_date: z.string().optional(),
   gender: z.string().optional(),
   phone: z.string().optional(),
@@ -294,3 +294,16 @@ export const updateProcedureSchema = z.object({
 });
 
 export type UpdateProcedureInput = z.infer<typeof updateProcedureSchema>;
+
+// ============================================
+// Notification Mark Read (API)
+// ============================================
+export const markNotificationSchema = z.object({
+  id: z.string().uuid('ID invalido').optional(),
+  markAllRead: z.boolean().optional(),
+}).refine(
+  (data) => data.id !== undefined || data.markAllRead !== undefined,
+  { message: 'Informe id ou markAllRead', path: ['id'] }
+);
+
+export type MarkNotificationInput = z.infer<typeof markNotificationSchema>;

@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     const { success: allowed } = await rateLimit(rlKey, { limit: 5, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
-        { error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
         { status: 429 }
       );
     }
@@ -66,13 +66,13 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'export:read');
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
     const body = await request.json();
     const parsed = exportSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+      return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 });
     }
 
     const { types, dateFrom, dateTo } = parsed.data;
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
       const { data, error } = await query;
 
       if (error) {
-        return NextResponse.json({ error: `Erro ao buscar ${type}: ${error.message}` }, { status: 500 });
+        return NextResponse.json({ success: false, error: `Erro ao buscar ${type}: ${error.message}` }, { status: 500 });
       }
 
       const csv = buildCSV(config.columns, (data || []) as unknown as Record<string, unknown>[]);
@@ -146,6 +146,6 @@ export async function POST(request: Request) {
     });
   } catch (err: unknown) {
     const error = err as { message?: string };
-    return NextResponse.json({ error: error.message || 'Erro interno' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Erro interno' }, { status: 500 });
   }
 }

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'reports:read');
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
 
     const { searchParams } = new URL(request.url);
@@ -120,6 +120,6 @@ export async function GET(request: Request) {
     });
   } catch (err: unknown) {
     const error = err as { message?: string };
-    return NextResponse.json({ error: error.message || 'Erro interno' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Erro interno' }, { status: 500 });
   }
 }

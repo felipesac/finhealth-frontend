@@ -17,7 +17,7 @@ export async function GET() {
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'settings:read');
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -28,7 +28,7 @@ export async function GET() {
     });
   } catch (err: unknown) {
     const error = err as { message?: string };
-    return NextResponse.json({ error: error.message || 'Erro interno' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Erro interno' }, { status: 500 });
   }
 }
 
@@ -37,7 +37,7 @@ export async function PUT(request: Request) {
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'settings:write');
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
 
     const body = await request.json();
@@ -47,7 +47,7 @@ export async function PUT(request: Request) {
 
     if (cnes && !/^\d{7}$/.test(cnes)) {
       return NextResponse.json(
-        { error: 'CNES deve ter 7 digitos numericos' },
+        { success: false, error: 'CNES deve ter 7 digitos numericos' },
         { status: 400 }
       );
     }
@@ -63,6 +63,6 @@ export async function PUT(request: Request) {
     return NextResponse.json({ data: settings });
   } catch (err: unknown) {
     const error = err as { message?: string };
-    return NextResponse.json({ error: error.message || 'Erro interno' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Erro interno' }, { status: 500 });
   }
 }

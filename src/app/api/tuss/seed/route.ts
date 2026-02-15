@@ -88,7 +88,7 @@ export async function POST() {
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'admin:all');
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
 
     const { data, error } = await supabase
@@ -107,7 +107,7 @@ export async function POST() {
       if (error.code === '42P01') {
         return NextResponse.json(
           {
-            error: 'Table tuss_procedures does not exist. Please run the migration first.',
+            success: false, error: 'Table tuss_procedures does not exist. Please run the migration first.',
             migration: 'Run the SQL in supabase/migrations/002_tuss_table.sql'
           },
           { status: 400 }
@@ -124,7 +124,7 @@ export async function POST() {
   } catch (error: unknown) {
     const err = error as { message?: string };
     return NextResponse.json(
-      { error: err.message || 'Failed to seed TUSS procedures' },
+      { success: false, error: err.message || 'Failed to seed TUSS procedures' },
       { status: 500 }
     );
   }

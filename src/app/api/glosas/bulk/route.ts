@@ -6,7 +6,7 @@ import { auditLog, getClientIp } from '@/lib/audit-logger';
 import { z } from 'zod';
 
 const bulkGlosaSchema = z.object({
-  ids: z.array(z.string().uuid()).min(1, 'Selecione pelo menos um item'),
+  ids: z.array(z.string().uuid()).min(1, 'Selecione pelo menos um item').max(100, 'Maximo 100 itens'),
   action: z.enum(['update_status', 'delete']),
   appeal_status: z.enum(['pending', 'in_progress', 'sent', 'accepted', 'rejected']).optional(),
 }).refine(

@@ -15,7 +15,7 @@ import { createClient } from '@/lib/supabase/server';
 import { checkPermission } from '@/lib/rbac';
 import { rateLimit } from '@/lib/rate-limit';
 
-const validBody = { xml: '<TISS><header/></TISS>', accountId: 'acc-1' };
+const validBody = { xml: '<TISS><header/></TISS>', accountId: '550e8400-e29b-41d4-a716-446655440000' };
 
 const validTissXml = `<?xml version="1.0" encoding="UTF-8"?>
 <ans:mensagemTISS xmlns:ans="http://www.ans.gov.br/padroes/tiss/schemas">
@@ -140,7 +140,7 @@ describe('POST /api/tiss/upload (local processing)', () => {
     allowRate(); allowAuth();
     const update = mockSupabaseUpdate();
 
-    const res = await POST(makeReq({ xml: validTissXml, accountId: 'acc-1' }));
+    const res = await POST(makeReq({ xml: validTissXml, accountId: '550e8400-e29b-41d4-a716-446655440000' }));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(true);
@@ -185,7 +185,7 @@ describe('POST /api/tiss/upload (local processing)', () => {
     allowRate(); allowAuth();
     mockSupabaseUpdate({ message: 'DB error' });
 
-    const res = await POST(makeReq({ xml: validTissXml, accountId: 'acc-1' }));
+    const res = await POST(makeReq({ xml: validTissXml, accountId: '550e8400-e29b-41d4-a716-446655440000' }));
     expect(res.status).toBe(500);
     const json = await res.json();
     expect(json.error).toContain('DB error');

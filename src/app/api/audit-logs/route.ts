@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
     let query = supabase
       .from('audit_logs')
-      .select('*', { count: 'exact' })
+      .select('id, user_id, action, resource, resource_id, details, ip, created_at', { count: 'exact' })
       .eq('organization_id', auth.organizationId)
       .order('created_at', { ascending: false });
 

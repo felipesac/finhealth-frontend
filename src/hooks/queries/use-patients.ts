@@ -41,6 +41,8 @@ export function usePatients(page: number, search?: string) {
       if (!res.ok) throw new Error('Failed to fetch patients');
       return res.json();
     },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
   });
 }
 

@@ -21,7 +21,7 @@ export async function GET() {
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'notifications:read');
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -32,7 +32,7 @@ export async function GET() {
     });
   } catch (err: unknown) {
     const error = err as { message?: string };
-    return NextResponse.json({ error: error.message || 'Erro interno' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Erro interno' }, { status: 500 });
   }
 }
 
@@ -41,7 +41,7 @@ export async function PUT(request: Request) {
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'notifications:write');
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
 
     const body = await request.json();
@@ -61,6 +61,6 @@ export async function PUT(request: Request) {
     return NextResponse.json({ data: prefs });
   } catch (err: unknown) {
     const error = err as { message?: string };
-    return NextResponse.json({ error: error.message || 'Erro interno' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Erro interno' }, { status: 500 });
   }
 }

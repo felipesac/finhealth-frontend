@@ -74,7 +74,7 @@ describe('PATCH /api/notifications', () => {
     const req = new Request('http://localhost/api/notifications', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: 'n1' }),
+      body: JSON.stringify({ id: '550e8400-e29b-41d4-a716-446655440000' }),
     });
     const res = await PATCH(req);
     expect(res.status).toBe(401);
@@ -88,7 +88,7 @@ describe('PATCH /api/notifications', () => {
     const req = new Request('http://localhost/api/notifications', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: 'n1' }),
+      body: JSON.stringify({ id: '550e8400-e29b-41d4-a716-446655440000' }),
     });
     const res = await PATCH(req);
     expect(res.status).toBe(200);

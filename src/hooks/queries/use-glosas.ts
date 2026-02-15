@@ -33,6 +33,8 @@ export function useGlosas(orgId: string, filters?: GlosaFilters) {
       return res.json();
     },
     enabled: !!orgId,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
   });
 }
 
@@ -46,6 +48,8 @@ export function useGlosa(orgId: string, id: string) {
       return json.data;
     },
     enabled: !!orgId && !!id,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
   });
 }
 

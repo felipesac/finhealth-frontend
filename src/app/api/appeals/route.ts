@@ -11,7 +11,7 @@ export async function PATCH(request: Request) {
     const { success: allowed } = await rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
     if (!allowed) {
       return NextResponse.json(
-        { error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
         { status: 429 }
       );
     }
@@ -19,13 +19,13 @@ export async function PATCH(request: Request) {
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'appeals:write');
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
     const body = await request.json();
     const parsed = appealSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+      return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 });
     }
 
     const { glosaId, text, action } = parsed.data;
@@ -78,7 +78,7 @@ export async function PATCH(request: Request) {
   } catch (err: unknown) {
     const error = err as { message?: string };
     return NextResponse.json(
-      { error: error.message || 'Erro ao processar recurso' },
+      { success: false, error: error.message || 'Erro ao processar recurso' },
       { status: 500 }
     );
   }
