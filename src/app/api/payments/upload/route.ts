@@ -3,6 +3,13 @@ import { createClient } from '@/lib/supabase/server';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
 import { checkPermission } from '@/lib/rbac';
+import { z } from 'zod';
+
+const PaymentUploadSchema = z.object({
+  content: z.string().min(1),
+  fileType: z.enum(['csv', 'ofx']),
+  healthInsurerId: z.string().uuid().optional().default(''),
+});
 
 interface ParsedPayment {
   payment_date: string;
@@ -81,30 +88,21 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { content, fileType, healthInsurerId } = body as {
-      content: string;
-      fileType: string;
-      healthInsurerId: string;
-    };
-
-    if (!content || !fileType) {
+    const validated = PaymentUploadSchema.safeParse(body);
+    if (!validated.success) {
       return NextResponse.json(
-        { success: false, error: 'Conteudo e tipo do arquivo obrigatorios' },
+        { success: false, error: 'Dados invalidos', details: validated.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { content, fileType, healthInsurerId } = validated.data;
 
     let parsed: ParsedPayment[];
 
     if (fileType === 'ofx') {
       parsed = parseOFX(content);
-    } else if (fileType === 'csv') {
-      parsed = parseCSV(content);
     } else {
-      return NextResponse.json(
-        { success: false, error: 'Tipo de arquivo invalido. Use CSV ou OFX.' },
-        { status: 400 }
-      );
+      parsed = parseCSV(content);
     }
 
     if (parsed.length === 0) {

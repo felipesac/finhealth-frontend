@@ -4,6 +4,7 @@ import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { checkPermission } from '@/lib/rbac';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
 import { updateProcedureSchema } from '@/lib/validations';
+import { logger } from '@/lib/logger';
 
 export async function GET(
   request: Request,
@@ -33,7 +34,8 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data });
-  } catch {
+  } catch (error) {
+    logger.error('Failed to get procedure', error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 });
   }
 }
@@ -74,7 +76,8 @@ export async function PATCH(
     auditLog(supabase, auth.userId, { action: 'update', resource: 'procedures', resource_id: id, organizationId: auth.organizationId, details: parsed.data, ip });
 
     return NextResponse.json({ success: true, data });
-  } catch {
+  } catch (error) {
+    logger.error('Failed to update procedure', error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 });
   }
 }
@@ -102,7 +105,8 @@ export async function DELETE(
     auditLog(supabase, auth.userId, { action: 'delete', resource: 'procedures', resource_id: id, organizationId: auth.organizationId, ip });
 
     return NextResponse.json({ success: true, message: 'Procedimento excluido' });
-  } catch {
+  } catch (error) {
+    logger.error('Failed to delete procedure', error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 });
   }
 }

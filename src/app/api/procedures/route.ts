@@ -4,6 +4,7 @@ import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { checkPermission } from '@/lib/rbac';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
 import { createProcedureSchema } from '@/lib/validations';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -42,7 +43,8 @@ export async function GET(request: Request) {
       data: data || [],
       pagination: { page, limit, total: count || 0 },
     });
-  } catch {
+  } catch (error) {
+    logger.error('Failed to list procedures', error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 });
   }
 }
@@ -84,7 +86,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, data }, { status: 201 });
-  } catch {
+  } catch (error) {
+    logger.error('Failed to create procedure', error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 });
   }
 }

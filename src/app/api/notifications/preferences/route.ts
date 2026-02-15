@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkPermission } from '@/lib/rbac';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
+import { z } from 'zod';
+
+const PreferencesSchema = z.object({
+  email_glosas: z.boolean().optional(),
+  email_pagamentos: z.boolean().optional(),
+  email_contas: z.boolean().optional(),
+  push_enabled: z.boolean().optional(),
+});
 
 export interface NotificationPreferences {
   email_glosas: boolean;
@@ -38,6 +46,7 @@ export async function GET(request: Request) {
     const prefs = user?.user_metadata?.notification_preferences as Partial<NotificationPreferences> | undefined;
 
     return NextResponse.json({
+      success: true,
       data: { ...defaultPreferences, ...prefs },
     });
   } catch (err: unknown) {
@@ -64,11 +73,18 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
+    const parsed = PreferencesSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: 'Dados invalidos', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
     const prefs: NotificationPreferences = {
-      email_glosas: Boolean(body.email_glosas),
-      email_pagamentos: Boolean(body.email_pagamentos),
-      email_contas: Boolean(body.email_contas),
-      push_enabled: Boolean(body.push_enabled),
+      email_glosas: parsed.data.email_glosas ?? defaultPreferences.email_glosas,
+      email_pagamentos: parsed.data.email_pagamentos ?? defaultPreferences.email_pagamentos,
+      email_contas: parsed.data.email_contas ?? defaultPreferences.email_contas,
+      push_enabled: parsed.data.push_enabled ?? defaultPreferences.push_enabled,
     };
 
     const { error } = await supabase.auth.updateUser({
@@ -77,7 +93,7 @@ export async function PUT(request: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ data: prefs });
+    return NextResponse.json({ success: true, data: prefs });
   } catch (err: unknown) {
     const error = err as { message?: string };
     return NextResponse.json({ success: false, error: error.message || 'Erro interno' }, { status: 500 });

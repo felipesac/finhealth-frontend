@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { checkPermission } from '@/lib/rbac';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
 const bulkGlosaSchema = z.object({
@@ -60,7 +61,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, count: ids.length });
-  } catch {
+  } catch (error) {
+    logger.error('Failed to bulk update glosas', error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 });
   }
 }

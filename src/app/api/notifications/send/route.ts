@@ -4,6 +4,14 @@ import { checkPermission } from '@/lib/rbac';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { sendNotificationEmail, type EmailType } from '@/lib/email';
 import { sendPushNotification, type PushSubscriptionData } from '@/lib/push';
+import { z } from 'zod';
+
+const SendNotificationSchema = z.object({
+  type: z.string().min(1),
+  subject: z.string().min(1),
+  data: z.record(z.union([z.string(), z.number()])).optional().default({}),
+  user_id: z.string().uuid().optional(),
+});
 
 export async function POST(request: Request) {
   try {
@@ -20,16 +28,19 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { type, subject, data, user_id } = body as {
+    const parsed = SendNotificationSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: 'Dados invalidos', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const { type, subject, data, user_id } = parsed.data as {
       type: EmailType;
       subject: string;
       data: Record<string, string | number>;
       user_id?: string;
     };
-
-    if (!type || !subject) {
-      return NextResponse.json({ success: false, error: 'type e subject sao obrigatorios' }, { status: 400 });
-    }
 
     const targetUserId = user_id || auth.userId;
 

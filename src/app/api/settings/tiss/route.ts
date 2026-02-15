@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkPermission } from '@/lib/rbac';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
+import { z } from 'zod';
+
+const TissSettingsSchema = z.object({
+  tiss_version: z.string().min(1).optional().default('3.05.00'),
+  cnes: z.string().regex(/^\d{7}$/, 'CNES deve ter 7 digitos numericos').or(z.literal('')).optional().default(''),
+});
 
 interface TissSettings {
   tiss_version: string;
@@ -34,6 +40,7 @@ export async function GET(request: Request) {
     const settings = user?.user_metadata?.tiss_settings as Partial<TissSettings> | undefined;
 
     return NextResponse.json({
+      success: true,
       data: { ...defaultSettings, ...settings },
     });
   } catch (err: unknown) {
@@ -60,18 +67,15 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-
-    const tissVersion = String(body.tiss_version || '3.05.00').trim();
-    const cnes = String(body.cnes || '').trim();
-
-    if (cnes && !/^\d{7}$/.test(cnes)) {
+    const parsed = TissSettingsSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'CNES deve ter 7 digitos numericos' },
+        { success: false, error: 'Dados invalidos', details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
-    const settings: TissSettings = { tiss_version: tissVersion, cnes };
+    const settings: TissSettings = { tiss_version: parsed.data.tiss_version, cnes: parsed.data.cnes };
 
     const { error } = await supabase.auth.updateUser({
       data: { tiss_settings: settings },
@@ -79,7 +83,7 @@ export async function PUT(request: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ data: settings });
+    return NextResponse.json({ success: true, data: settings });
   } catch (err: unknown) {
     const error = err as { message?: string };
     return NextResponse.json({ success: false, error: error.message || 'Erro interno' }, { status: 500 });
