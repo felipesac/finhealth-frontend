@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkPermission } from '@/lib/rbac';
+import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 interface TissSettings {
   tiss_version: string;
@@ -12,8 +13,17 @@ const defaultSettings: TissSettings = {
   cnes: '',
 };
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const rlKey = getRateLimitKey(request, 'tiss-settings-read');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'settings:read');
     if (!auth.authorized) {
@@ -34,6 +44,15 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
+    const rlKey = getRateLimitKey(request, 'tiss-settings-write');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 10, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'settings:write');
     if (!auth.authorized) {

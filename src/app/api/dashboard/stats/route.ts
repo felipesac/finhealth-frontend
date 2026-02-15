@@ -117,6 +117,8 @@ export async function GET(request: Request) {
         accountStatusData,
         glosasTrendData,
       },
+    }, {
+      headers: { 'Cache-Control': 'private, max-age=60' },
     });
   } catch (err: unknown) {
     const error = err as { message?: string };

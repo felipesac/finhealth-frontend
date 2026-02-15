@@ -1,9 +1,10 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { logger } from '@/lib/logger';
 
 export default function DashboardError({ error, reset }: { error: Error; reset: () => void }) {
-  console.error('[Dashboard Error]', error.message, error.stack);
+  logger.error('Dashboard error boundary triggered', error, { stack: error.stack });
 
   return (
     <div className="flex flex-col items-center justify-center py-12 space-y-4 px-4 sm:py-16">

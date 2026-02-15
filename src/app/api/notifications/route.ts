@@ -2,9 +2,19 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkPermission } from '@/lib/rbac';
 import { markNotificationSchema } from '@/lib/validations';
+import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const rlKey = getRateLimitKey(request, 'notifications-list');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'notifications:read');
     if (!auth.authorized) {
@@ -37,6 +47,15 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
+    const rlKey = getRateLimitKey(request, 'notifications-update');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 20, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'notifications:write');
     if (!auth.authorized) {

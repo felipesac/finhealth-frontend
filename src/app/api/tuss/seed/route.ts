@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkPermission } from '@/lib/rbac';
+import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 // Common TUSS procedures data
 const TUSS_PROCEDURES = [
@@ -83,8 +84,17 @@ const TUSS_PROCEDURES = [
   { code: '80001038', description: 'Diaria de UTI adulto', chapter: 'Diarias', group_name: 'Internacao', procedure_type: 'procedimento', unit_price: 2000.00 },
 ];
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    const rlKey = getRateLimitKey(request, 'tuss-seed');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 5, windowSeconds: 3600 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'admin:all');
     if (!auth.authorized) {

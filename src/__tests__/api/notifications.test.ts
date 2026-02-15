@@ -30,6 +30,11 @@ vi.mock('@/lib/rbac', () => ({
   }),
 }));
 
+vi.mock('@/lib/rate-limit', () => ({
+  rateLimit: vi.fn().mockResolvedValue({ success: true }),
+  getRateLimitKey: vi.fn().mockReturnValue('test-key'),
+}));
+
 import { GET, PATCH } from '@/app/api/notifications/route';
 import { checkPermission } from '@/lib/rbac';
 

@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
 vi.mock('@/lib/rbac', () => ({ checkPermission: vi.fn() }));
+vi.mock('@/lib/rate-limit', () => ({
+  rateLimit: vi.fn().mockResolvedValue({ success: true }),
+  getRateLimitKey: vi.fn().mockReturnValue('test-key'),
+}));
 
 import { GET, PATCH } from './route';
 import { createClient } from '@/lib/supabase/server';

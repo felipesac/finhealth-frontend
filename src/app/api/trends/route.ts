@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkPermission } from '@/lib/rbac';
+import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -20,6 +21,15 @@ interface GlosasByTypeRow {
 
 export async function GET(request: Request) {
   try {
+    const rlKey = getRateLimitKey(request, 'trends');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
     const supabase = await createClient();
     const auth = await checkPermission(supabase, 'reports:read');
     if (!auth.authorized) {
@@ -117,6 +127,8 @@ export async function GET(request: Request) {
         estimatedGlosaRisk: Math.round(avgGlosas),
         averageGlosaRate: glosaRate,
       },
+    }, {
+      headers: { 'Cache-Control': 'private, max-age=300' },
     });
   } catch (err: unknown) {
     const error = err as { message?: string };

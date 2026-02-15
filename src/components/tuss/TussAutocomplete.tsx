@@ -46,8 +46,7 @@ export function TussAutocomplete({
       const response = await fetch(`/api/tuss?search=${encodeURIComponent(query)}&limit=10`);
       const data = await response.json();
       setResults(data.data || []);
-    } catch (error) {
-      console.error('Error searching TUSS:', error);
+    } catch {
       setResults([]);
     } finally {
       setLoading(false);
