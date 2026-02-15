@@ -12,11 +12,10 @@ export async function GET(request: Request) {
     if (!allowed) return NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 });
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 });
-
     const auth = await checkPermission(supabase, 'accounts:read');
-    if (!auth) return NextResponse.json({ success: false, error: 'Sem permissao' }, { status: 403 });
+    if (!auth.authorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    }
 
     const { searchParams } = new URL(request.url);
     const accountId = searchParams.get('account_id');
@@ -24,6 +23,7 @@ export async function GET(request: Request) {
     let query = supabase
       .from('procedures')
       .select('*', { count: 'exact' })
+      .eq('organization_id', auth.organizationId)
       .order('created_at', { ascending: false });
 
     if (accountId) {
@@ -54,11 +54,10 @@ export async function POST(request: Request) {
     if (!allowed) return NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 });
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 });
-
     const auth = await checkPermission(supabase, 'accounts:write');
-    if (!auth) return NextResponse.json({ success: false, error: 'Sem permissao' }, { status: 403 });
+    if (!auth.authorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    }
 
     const body = await request.json();
     const parsed = createProcedureSchema.safeParse(body);
@@ -68,17 +67,18 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase
       .from('procedures')
-      .insert(parsed.data)
+      .insert({ ...parsed.data, organization_id: auth.organizationId })
       .select()
       .single();
 
     if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
 
     const ip = getClientIp(request);
-    auditLog(supabase, user.id, {
+    auditLog(supabase, auth.userId, {
       action: 'create',
       resource: 'procedures',
       resource_id: data.id,
+      organizationId: auth.organizationId,
       details: { description: parsed.data.description },
       ip,
     });

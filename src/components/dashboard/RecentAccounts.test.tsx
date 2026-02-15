@@ -23,7 +23,7 @@ const mockAccounts: MedicalAccount[] = [
     metadata: {},
     created_at: '2024-06-15T10:00:00Z',
     updated_at: '2024-06-15T10:00:00Z',
-    patient: { id: 'p1', name: 'Maria Silva', created_at: '', updated_at: '' },
+    patient: { id: 'p1', name: 'Maria Silva', organization_id: 'org-1', created_at: '', updated_at: '' },
   },
   {
     id: '2',

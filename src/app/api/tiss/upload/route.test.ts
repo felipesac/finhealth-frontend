@@ -45,13 +45,17 @@ function makeReq(body: unknown) {
 
 function allowRate() { (rateLimit as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ success: true, remaining: 9, resetAt: 0 }); }
 function denyRate() { (rateLimit as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ success: false, remaining: 0, resetAt: 0 }); }
-function allowAuth() { (checkPermission as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ authorized: true, userId: 'u1', email: 'a@b.com', role: 'finance_manager' }); }
+function allowAuth() { (checkPermission as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ authorized: true, userId: 'u1', email: 'a@b.com', role: 'finance_manager', organizationId: 'org-1' }); }
 function denyAuth() { (checkPermission as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ authorized: false, status: 401, error: 'Denied' }); }
 
 function mockSupabaseUpdate(error: { message: string } | null = null) {
-  const update = vi.fn().mockReturnValue({
+  const eqChain = {
     eq: vi.fn().mockResolvedValue({ error }),
-  });
+  };
+  eqChain.eq.mockReturnValue(eqChain);
+  // Resolve when awaited after all .eq() calls
+  (eqChain as Record<string, unknown>).then = (resolve: (v: unknown) => void) => resolve({ error });
+  const update = vi.fn().mockReturnValue(eqChain);
   (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
     from: vi.fn().mockReturnValue({ update }),
   });

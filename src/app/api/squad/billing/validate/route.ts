@@ -34,7 +34,12 @@ export async function POST(request: Request) {
 
     const client = createSquadClient();
     const result = await client.execute(
-      { agentId: 'billing-agent', taskName: 'validate-tiss', parameters: parsed.data },
+      {
+        agentId: 'billing-agent',
+        taskName: 'validate-tiss',
+        parameters: parsed.data,
+        context: { organizationId: auth.organizationId, userId: auth.userId },
+      },
       30_000,
     );
 
@@ -48,6 +53,7 @@ export async function POST(request: Request) {
     auditLog(supabase, auth.userId, {
       action: 'squad.billing.validate',
       resource: 'squad',
+      organizationId: auth.organizationId,
       details: { taskName: 'validate-tiss' },
       ip: getClientIp(request),
     });

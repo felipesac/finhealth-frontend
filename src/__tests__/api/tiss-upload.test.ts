@@ -32,8 +32,15 @@ vi.mock('@/lib/sanitize-xml', () => ({
   sanitizeXml: vi.fn((xml: string) => xml),
 }));
 
+vi.mock('@/lib/rbac', () => ({
+  checkPermission: vi.fn().mockResolvedValue({
+    authorized: true, userId: 'user-1', email: 'test@test.com', role: 'admin', organizationId: 'org-1',
+  }),
+}));
+
 import { POST } from '@/app/api/tiss/upload/route';
 import { rateLimit } from '@/lib/rate-limit';
+import { checkPermission } from '@/lib/rbac';
 
 const VALID_XML = '<ans:mensagemTISS><ans:cabecalho/></ans:mensagemTISS>';
 
@@ -55,15 +62,13 @@ describe('POST /api/tiss/upload', () => {
   });
 
   it('returns 401 when not authenticated', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    vi.mocked(checkPermission).mockResolvedValueOnce({ authorized: false, status: 401, error: 'Nao autorizado' });
     const res = await POST(makeReq({ xml: VALID_XML }));
     expect(res.status).toBe(401);
   });
 
   it('returns 403 when user lacks tiss:write permission', async () => {
-    mockGetUser.mockResolvedValueOnce({
-      data: { user: { id: 'user-1', email: 'auditor@test.com', user_metadata: { role: 'auditor' } } },
-    });
+    vi.mocked(checkPermission).mockResolvedValueOnce({ authorized: false, status: 403, error: 'Permissao insuficiente' });
     const res = await POST(makeReq({ xml: VALID_XML }));
     expect(res.status).toBe(403);
     const json = await res.json();

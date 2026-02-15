@@ -116,6 +116,7 @@ export async function POST(request: Request) {
 
     const records = parsed.map((p) => ({
       ...p,
+      organization_id: auth.organizationId,
       health_insurer_id: healthInsurerId || null,
       matched_amount: 0,
       unmatched_amount: p.total_amount,
@@ -138,6 +139,7 @@ export async function POST(request: Request) {
     auditLog(supabase, auth.userId, {
       action: 'payment.bulk_import',
       resource: 'payments',
+      organizationId: auth.organizationId,
       details: {
         file_type: fileType,
         records_imported: inserted?.length || 0,

@@ -34,7 +34,12 @@ export async function POST(request: Request) {
 
     const client = createSquadClient();
     const result = await client.execute(
-      { agentId: 'reconciliation-agent', taskName: 'reconcile-payment', parameters: parsed.data },
+      {
+        agentId: 'reconciliation-agent',
+        taskName: 'reconcile-payment',
+        parameters: parsed.data,
+        context: { organizationId: auth.organizationId, userId: auth.userId },
+      },
       60_000,
     );
 
@@ -48,6 +53,7 @@ export async function POST(request: Request) {
     auditLog(supabase, auth.userId, {
       action: 'squad.reconciliation.reconcile',
       resource: 'squad',
+      organizationId: auth.organizationId,
       details: { taskName: 'reconcile-payment', competencia: parsed.data.repasse.competencia },
       ip: getClientIp(request),
     });

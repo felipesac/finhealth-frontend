@@ -31,7 +31,7 @@ const mockAccounts: MedicalAccount[] = [
     metadata: {},
     created_at: '2024-06-15T10:00:00Z',
     updated_at: '2024-06-15T10:00:00Z',
-    patient: { id: 'p1', name: 'Maria Silva', created_at: '', updated_at: '' },
+    patient: { id: 'p1', name: 'Maria Silva', organization_id: 'org-1', created_at: '', updated_at: '' },
     health_insurer: {
       id: 'h1', name: 'Unimed', ans_code: '123', tiss_version: '3.05',
       config: {}, active: true, created_at: '', updated_at: '',

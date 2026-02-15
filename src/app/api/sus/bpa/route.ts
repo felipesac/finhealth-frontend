@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     let query = supabase
       .from('sus_bpa')
       .select('*, patient:patients(id, name)')
-      .eq('user_id', auth.userId)
+      .eq('organization_id', auth.organizationId)
       .order('created_at', { ascending: false });
 
     if (competencia) query = query.eq('competencia', competencia);
@@ -103,6 +103,7 @@ export async function POST(request: Request) {
       .from('sus_bpa')
       .insert({
         user_id: auth.userId,
+        organization_id: auth.organizationId,
         ...parsed.data,
         valor_unitario: valorUnitario,
         valor_total: valorTotal,
@@ -122,6 +123,7 @@ export async function POST(request: Request) {
       action: 'sus_bpa.create',
       resource: 'sus_bpa',
       resource_id: inserted.id,
+      organizationId: auth.organizationId,
       details: {
         cnes: parsed.data.cnes,
         procedimento: parsed.data.procedimento,

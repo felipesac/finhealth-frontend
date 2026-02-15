@@ -48,6 +48,29 @@ export async function PATCH(
       );
     }
 
+    // Verify target user belongs to same organization
+    const { data: targetProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (targetProfile?.user_id) {
+      const { data: membership } = await supabaseAdmin
+        .from('organization_members')
+        .select('id')
+        .eq('user_id', targetProfile.user_id)
+        .eq('organization_id', auth.organizationId)
+        .maybeSingle();
+
+      if (!membership) {
+        return NextResponse.json(
+          { success: false, error: 'Usuario nao pertence a sua organizacao' },
+          { status: 403 }
+        );
+      }
+    }
+
     // Build update payload
     const updatePayload: Record<string, unknown> = {};
     if (parsed.data.role !== undefined) updatePayload.role = parsed.data.role;
@@ -91,6 +114,7 @@ export async function PATCH(
       action: parsed.data.active !== undefined ? 'user.toggle_active' : 'user.update_role',
       resource: 'profiles',
       resource_id: id,
+      organizationId: auth.organizationId,
       details: { ...updatePayload },
       ip: getClientIp(request),
     });
@@ -137,12 +161,28 @@ export async function DELETE(
       );
     }
 
-    // Get profile to find user_id for Auth ban
+    // Get profile to find user_id for Auth ban + verify org membership
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('user_id')
       .eq('id', id)
       .single();
+
+    if (profile?.user_id) {
+      const { data: membership } = await supabaseAdmin
+        .from('organization_members')
+        .select('id')
+        .eq('user_id', profile.user_id)
+        .eq('organization_id', auth.organizationId)
+        .maybeSingle();
+
+      if (!membership) {
+        return NextResponse.json(
+          { success: false, error: 'Usuario nao pertence a sua organizacao' },
+          { status: 403 }
+        );
+      }
+    }
 
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
@@ -167,6 +207,7 @@ export async function DELETE(
       action: 'user.deactivate',
       resource: 'profiles',
       resource_id: id,
+      organizationId: auth.organizationId,
       details: {},
       ip: getClientIp(request),
     });

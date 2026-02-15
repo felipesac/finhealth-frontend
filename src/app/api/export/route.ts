@@ -68,8 +68,6 @@ export async function POST(request: Request) {
     if (!auth.authorized) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    const user = { id: auth.userId, email: auth.email };
-
     const body = await request.json();
     const parsed = exportSchema.safeParse(body);
 
@@ -91,6 +89,11 @@ export async function POST(request: Request) {
         .order('created_at', { ascending: false })
         .limit(5000);
 
+      // Org-scope all tables except shared reference data (health_insurers)
+      if (config.table !== 'health_insurers') {
+        query = query.eq('organization_id', auth.organizationId);
+      }
+
       if (dateFrom) {
         query = query.gte('created_at', dateFrom);
       }
@@ -108,9 +111,10 @@ export async function POST(request: Request) {
       allSheets.push({ name: type, csv });
     }
 
-    auditLog(supabase, user.id, {
+    auditLog(supabase, auth.userId, {
       action: 'data.export',
       resource: 'export',
+      organizationId: auth.organizationId,
       details: { types, dateFrom, dateTo, rowCounts: allSheets.map((s) => ({ name: s.name, rows: s.csv.split('\n').length - 1 })) },
       ip: getClientIp(request),
     });

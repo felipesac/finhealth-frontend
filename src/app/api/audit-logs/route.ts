@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     let query = supabase
       .from('audit_logs')
       .select('*', { count: 'exact' })
+      .eq('organization_id', auth.organizationId)
       .order('created_at', { ascending: false });
 
     if (action) {

@@ -24,7 +24,14 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
+vi.mock('@/lib/rbac', () => ({
+  checkPermission: vi.fn().mockResolvedValue({
+    authorized: true, userId: 'user-1', email: 'test@test.com', role: 'admin', organizationId: 'org-1',
+  }),
+}));
+
 import { GET, PATCH } from '@/app/api/notifications/route';
+import { checkPermission } from '@/lib/rbac';
 
 describe('GET /api/notifications', () => {
   beforeEach(() => {
@@ -39,7 +46,7 @@ describe('GET /api/notifications', () => {
   });
 
   it('returns 401 if not authenticated', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    vi.mocked(checkPermission).mockResolvedValueOnce({ authorized: false, status: 401, error: 'Nao autorizado' });
     const res = await GET();
     expect(res.status).toBe(401);
   });
@@ -87,7 +94,7 @@ describe('PATCH /api/notifications', () => {
   });
 
   it('returns 401 if not authenticated', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    vi.mocked(checkPermission).mockResolvedValueOnce({ authorized: false, status: 401, error: 'Nao autorizado' });
     const req = new Request('http://localhost/api/notifications', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

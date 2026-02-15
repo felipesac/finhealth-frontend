@@ -34,7 +34,12 @@ export async function POST(request: Request) {
 
     const client = createSquadClient();
     const result = await client.execute(
-      { agentId: 'auditor-agent', taskName: 'audit-account', parameters: parsed.data },
+      {
+        agentId: 'auditor-agent',
+        taskName: 'audit-account',
+        parameters: parsed.data,
+        context: { organizationId: auth.organizationId, userId: auth.userId },
+      },
       120_000,
     );
 
@@ -49,6 +54,7 @@ export async function POST(request: Request) {
       action: 'squad.audit.account',
       resource: 'squad',
       resource_id: parsed.data.conta.id,
+      organizationId: auth.organizationId,
       details: { taskName: 'audit-account' },
       ip: getClientIp(request),
     });

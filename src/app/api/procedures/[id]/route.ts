@@ -16,11 +16,10 @@ export async function PATCH(
     if (!allowed) return NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 });
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 });
-
     const auth = await checkPermission(supabase, 'accounts:write');
-    if (!auth) return NextResponse.json({ success: false, error: 'Sem permissao' }, { status: 403 });
+    if (!auth.authorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    }
 
     const body = await request.json();
     const parsed = updateProcedureSchema.safeParse(body);
@@ -32,13 +31,14 @@ export async function PATCH(
       .from('procedures')
       .update(parsed.data)
       .eq('id', id)
+      .eq('organization_id', auth.organizationId)
       .select()
       .single();
 
     if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
 
     const ip = getClientIp(request);
-    auditLog(supabase, user.id, { action: 'update', resource: 'procedures', resource_id: id, details: parsed.data, ip });
+    auditLog(supabase, auth.userId, { action: 'update', resource: 'procedures', resource_id: id, organizationId: auth.organizationId, details: parsed.data, ip });
 
     return NextResponse.json({ success: true, data });
   } catch {
@@ -57,17 +57,16 @@ export async function DELETE(
     if (!allowed) return NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 });
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 });
-
     const auth = await checkPermission(supabase, 'accounts:write');
-    if (!auth) return NextResponse.json({ success: false, error: 'Sem permissao' }, { status: 403 });
+    if (!auth.authorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    }
 
-    const { error } = await supabase.from('procedures').delete().eq('id', id);
+    const { error } = await supabase.from('procedures').delete().eq('id', id).eq('organization_id', auth.organizationId);
     if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
 
     const ip = getClientIp(request);
-    auditLog(supabase, user.id, { action: 'delete', resource: 'procedures', resource_id: id, ip });
+    auditLog(supabase, auth.userId, { action: 'delete', resource: 'procedures', resource_id: id, organizationId: auth.organizationId, ip });
 
     return NextResponse.json({ success: true, message: 'Procedimento excluido' });
   } catch {

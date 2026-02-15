@@ -37,6 +37,7 @@ export async function GET(request: Request) {
     const { data: accounts } = await supabase
       .from('medical_accounts')
       .select('total_amount, glosa_amount, paid_amount, created_at')
+      .eq('organization_id', auth.organizationId)
       .gte('created_at', startISO)
       .order('created_at', { ascending: true });
 
@@ -44,6 +45,7 @@ export async function GET(request: Request) {
     const { data: glosas } = await supabase
       .from('glosas')
       .select('glosa_amount, glosa_type, created_at')
+      .eq('organization_id', auth.organizationId)
       .gte('created_at', startISO)
       .order('created_at', { ascending: true });
 

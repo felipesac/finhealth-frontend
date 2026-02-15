@@ -44,6 +44,7 @@ export async function PATCH(
       .from('medical_accounts')
       .update(parsed.data)
       .eq('id', id)
+      .eq('organization_id', auth.organizationId)
       .select()
       .single();
 
@@ -58,6 +59,7 @@ export async function PATCH(
       action: 'medical_account.update',
       resource: 'medical_accounts',
       resource_id: id,
+      organizationId: auth.organizationId,
       details: parsed.data,
       ip: getClientIp(request),
     });
@@ -100,7 +102,8 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from('medical_accounts')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('organization_id', auth.organizationId);
 
     if (deleteError) {
       return NextResponse.json(
@@ -113,6 +116,7 @@ export async function DELETE(
       action: 'medical_account.delete',
       resource: 'medical_accounts',
       resource_id: id,
+      organizationId: auth.organizationId,
       details: {},
       ip: getClientIp(request),
     });

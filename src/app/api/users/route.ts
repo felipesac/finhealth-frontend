@@ -27,9 +27,22 @@ export async function GET(request: Request) {
       );
     }
 
+    // Filter users by organization membership (supabaseAdmin bypasses RLS)
+    const { data: orgMembers } = await supabaseAdmin
+      .from('organization_members')
+      .select('user_id')
+      .eq('organization_id', auth.organizationId);
+
+    const memberUserIds = (orgMembers || []).map((m: { user_id: string }) => m.user_id);
+
+    if (memberUserIds.length === 0) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
     const { data: profiles, error } = await supabaseAdmin
       .from('profiles')
       .select('id, email, name, role, active, created_at, last_sign_in_at')
+      .in('user_id', memberUserIds)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -129,10 +142,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Add user to organization
+    await supabaseAdmin.from('organization_members').insert({
+      user_id: authData.user.id,
+      organization_id: auth.organizationId,
+      role: parsed.data.role === 'admin' ? 'admin' : 'billing',
+      invited_at: new Date().toISOString(),
+      accepted_at: new Date().toISOString(),
+    });
+
     auditLog(supabase, auth.userId, {
       action: 'user.invite',
       resource: 'profiles',
       resource_id: profile.id,
+      organizationId: auth.organizationId,
       details: { email: parsed.data.email, role: parsed.data.role },
       ip: getClientIp(request),
     });

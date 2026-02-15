@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createPatientSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
-import { auditLog, getClientIp } from '@/lib/audit-logger';
+import { auditLog, auditRead, getClientIp } from '@/lib/audit-logger';
 import { checkPermission } from '@/lib/rbac';
+import { maskPatientsPii, maskPatientPii } from '@/lib/pii';
 
 export async function GET(request: Request) {
   try {
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
     let query = supabase
       .from('patients')
       .select('*', { count: 'exact' })
+      .eq('organization_id', auth.organizationId)
       .order('name');
 
     if (search) {
@@ -40,9 +42,18 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
+    auditRead(supabase, auth.userId, {
+      resource: 'patients',
+      organizationId: auth.organizationId,
+      filters: { search, page, limit },
+      recordCount: data?.length ?? 0,
+      ip: getClientIp(request),
+      containsPii: true,
+    });
+
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data: maskPatientsPii(data || [], { showFullCpf: auth.role === 'admin' }),
       pagination: { page, limit, total: count || 0, totalPages: Math.ceil((count || 0) / limit) },
     });
   } catch (error: unknown) {
@@ -73,7 +84,10 @@ export async function POST(request: Request) {
 
     const { data: inserted, error: insertError } = await supabase
       .from('patients')
-      .insert(parsed.data)
+      .insert({
+        ...parsed.data,
+        organization_id: auth.organizationId,
+      })
       .select()
       .single();
 
@@ -85,11 +99,15 @@ export async function POST(request: Request) {
       action: 'patient.create',
       resource: 'patients',
       resource_id: inserted.id,
+      organizationId: auth.organizationId,
       details: { name: parsed.data.name },
       ip: getClientIp(request),
     });
 
-    return NextResponse.json({ success: true, data: inserted });
+    return NextResponse.json({
+      success: true,
+      data: maskPatientPii(inserted, { showFullCpf: auth.role === 'admin' }),
+    });
   } catch (error: unknown) {
     const err = error as { message?: string };
     return NextResponse.json({ success: false, error: err.message || 'Erro interno' }, { status: 500 });

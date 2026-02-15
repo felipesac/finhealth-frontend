@@ -34,6 +34,7 @@ export async function GET(request: Request) {
     let query = supabase
       .from('glosas')
       .select('*, medical_account:medical_accounts(account_number)', { count: 'exact' })
+      .eq('organization_id', auth.organizationId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -103,6 +104,7 @@ export async function POST(request: Request) {
       .from('glosas')
       .insert({
         ...parsed.data,
+        organization_id: auth.organizationId,
         appeal_status: 'pending',
       })
       .select()
@@ -119,6 +121,7 @@ export async function POST(request: Request) {
       action: 'glosa.create',
       resource: 'glosas',
       resource_id: inserted.id,
+      organizationId: auth.organizationId,
       details: {
         glosa_code: parsed.data.glosa_code,
         glosa_type: parsed.data.glosa_type,

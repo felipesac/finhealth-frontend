@@ -23,11 +23,10 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 });
-
     const auth = await checkPermission(supabase, 'accounts:write');
-    if (!auth) return NextResponse.json({ success: false, error: 'Sem permissao' }, { status: 403 });
+    if (!auth.authorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    }
 
     const body = await request.json();
     const parsed = bulkAccountSchema.safeParse(body);
@@ -42,20 +41,22 @@ export async function POST(request: Request) {
       const { error } = await supabase
         .from('medical_accounts')
         .update({ status })
-        .in('id', ids);
+        .in('id', ids)
+        .eq('organization_id', auth.organizationId);
       if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
 
-      auditLog(supabase, user.id, { action: 'bulk_update_status', resource: 'medical_accounts', details: { ids, status }, ip });
+      auditLog(supabase, auth.userId, { action: 'bulk_update_status', resource: 'medical_accounts', organizationId: auth.organizationId, details: { ids, status }, ip });
     }
 
     if (action === 'delete') {
       const { error } = await supabase
         .from('medical_accounts')
         .delete()
-        .in('id', ids);
+        .in('id', ids)
+        .eq('organization_id', auth.organizationId);
       if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
 
-      auditLog(supabase, user.id, { action: 'bulk_delete', resource: 'medical_accounts', details: { ids }, ip });
+      auditLog(supabase, auth.userId, { action: 'bulk_delete', resource: 'medical_accounts', organizationId: auth.organizationId, details: { ids }, ip });
     }
 
     return NextResponse.json({ success: true, count: ids.length });

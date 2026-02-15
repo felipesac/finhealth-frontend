@@ -2,15 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockGetUser, mockChain } = vi.hoisted(() => {
   const mockGetUser = vi.fn();
-  const mockChain = {
+  const mockChain: Record<string, ReturnType<typeof vi.fn>> & { then?: unknown } = {
     select: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
-    limit: vi.fn(),
+    limit: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
     lte: vi.fn().mockReturnThis(),
-    then: vi.fn().mockResolvedValue({ error: null }),
   };
   return { mockGetUser, mockChain };
 });
@@ -32,8 +31,15 @@ vi.mock('@/lib/audit-logger', () => ({
   getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
 }));
 
+vi.mock('@/lib/rbac', () => ({
+  checkPermission: vi.fn().mockResolvedValue({
+    authorized: true, userId: 'user-1', email: 'test@test.com', role: 'admin', organizationId: 'org-1',
+  }),
+}));
+
 import { POST } from '@/app/api/export/route';
 import { rateLimit } from '@/lib/rate-limit';
+import { checkPermission } from '@/lib/rbac';
 
 function makeReq(body: unknown) {
   return new Request('http://localhost:3000/api/export', {
@@ -49,14 +55,19 @@ describe('POST /api/export', () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'user-1', email: 'test@test.com' } },
     });
-    mockChain.limit.mockResolvedValue({
+    // Re-establish chain returns after clearAllMocks
+    for (const key of ['select', 'insert', 'eq', 'order', 'limit', 'gte', 'lte']) {
+      mockChain[key].mockReturnValue(mockChain);
+    }
+    // Make chain thenable — resolves with test data when awaited
+    (mockChain as Record<string, unknown>).then = vi.fn((resolve: (v: unknown) => void) => resolve({
       data: [{ account_number: 'CT-001', status: 'paid', total_amount: 5000 }],
       error: null,
-    });
+    }));
   });
 
   it('returns 401 if not authenticated', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    vi.mocked(checkPermission).mockResolvedValueOnce({ authorized: false, status: 401, error: 'Nao autorizado' });
     const res = await POST(makeReq({ types: ['accounts'] }));
     expect(res.status).toBe(401);
   });

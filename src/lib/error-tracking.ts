@@ -47,3 +47,65 @@ export function setUser(user: { id: string; email?: string } | null): void {
     console.debug('[error-tracking] User set:', user.id);
   }
 }
+
+// =============================================================================
+// Sentry PII Scrubbing Configuration (LGPD Compliance)
+// =============================================================================
+// Activate these hooks when initializing Sentry to prevent PII leaks.
+// Usage in sentry.client.config.ts / sentry.server.config.ts:
+//   import { SENTRY_PII_CONFIG } from '@/lib/error-tracking';
+//   Sentry.init({ dsn: '...', ...SENTRY_PII_CONFIG });
+// =============================================================================
+
+const CPF_PATTERN = /\d{3}\.\d{3}\.\d{3}-\d{2}/g;
+const CPF_UNFORMATTED_PATTERN = /\b\d{11}\b/g;
+
+function scrubPiiFromString(text: string): string {
+  return text
+    .replace(CPF_PATTERN, '***.***.***-**')
+    .replace(CPF_UNFORMATTED_PATTERN, '***********');
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export const SENTRY_PII_CONFIG = {
+  beforeSend(event: any) {
+    // Strip user email from event context
+    if (event.user) {
+      delete event.user.email;
+      delete event.user.username;
+      delete event.user.ip_address;
+    }
+
+    // Scrub CPF patterns from request body
+    if (event.request?.data && typeof event.request.data === 'string') {
+      event.request.data = scrubPiiFromString(event.request.data);
+    }
+
+    // Scrub CPF from exception messages
+    if (event.exception?.values) {
+      for (const ex of event.exception.values) {
+        if (ex.value && typeof ex.value === 'string') {
+          ex.value = scrubPiiFromString(ex.value);
+        }
+      }
+    }
+
+    return event;
+  },
+
+  beforeBreadcrumb(breadcrumb: any) {
+    if (breadcrumb.data) {
+      const sensitiveKeys = ['cpf', 'email', 'phone', 'birth_date', 'name'];
+      for (const key of sensitiveKeys) {
+        if (key in breadcrumb.data) {
+          breadcrumb.data[key] = '[REDACTED]';
+        }
+      }
+    }
+    if (breadcrumb.message && typeof breadcrumb.message === 'string') {
+      breadcrumb.message = scrubPiiFromString(breadcrumb.message);
+    }
+    return breadcrumb;
+  },
+} as const;
+/* eslint-enable @typescript-eslint/no-explicit-any */

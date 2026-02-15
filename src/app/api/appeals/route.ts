@@ -21,8 +21,6 @@ export async function PATCH(request: Request) {
     if (!auth.authorized) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    const user = { id: auth.userId, email: auth.email };
-
     const body = await request.json();
     const parsed = appealSchema.safeParse(body);
 
@@ -40,14 +38,16 @@ export async function PATCH(request: Request) {
           appeal_status: 'sent',
           appeal_sent_at: new Date().toISOString(),
         })
-        .eq('id', glosaId);
+        .eq('id', glosaId)
+        .eq('organization_id', auth.organizationId);
 
       if (error) throw error;
 
-      auditLog(supabase, user.id, {
+      auditLog(supabase, auth.userId, {
         action: 'appeal.submit',
         resource: 'glosas',
         resource_id: glosaId,
+        organizationId: auth.organizationId,
         ip: getClientIp(request),
       });
 
@@ -61,14 +61,16 @@ export async function PATCH(request: Request) {
         appeal_text: text,
         appeal_status: 'in_progress',
       })
-      .eq('id', glosaId);
+      .eq('id', glosaId)
+      .eq('organization_id', auth.organizationId);
 
     if (error) throw error;
 
-    auditLog(supabase, user.id, {
+    auditLog(supabase, auth.userId, {
       action: 'appeal.save_draft',
       resource: 'glosas',
       resource_id: glosaId,
+      organizationId: auth.organizationId,
       ip: getClientIp(request),
     });
 

@@ -61,6 +61,7 @@ export interface Patient {
   address?: Record<string, unknown>;
   /** @deprecated Renamed to health_insurance_id_deprecated in DB. Use health_insurer_id via medical_accounts. */
   health_insurance_id_deprecated?: string;
+  organization_id: string;
   created_at: string;
   updated_at: string;
 }

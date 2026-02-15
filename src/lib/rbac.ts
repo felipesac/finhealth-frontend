@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getUserOrganizationId } from '@/lib/supabase/helpers';
 
 export type UserRole = 'admin' | 'finance_manager' | 'auditor' | 'tiss_operator';
 
@@ -97,27 +98,32 @@ export function hasPermission(role: UserRole, permission: Permission): boolean {
 }
 
 /**
- * Require authentication + permission. Returns user info or null.
+ * Require authentication + permission. Returns user info with org context or null.
  */
 export async function requirePermission(
   supabase: SupabaseClient,
   permission: Permission
-): Promise<{ userId: string; email: string; role: UserRole } | null> {
+): Promise<{ userId: string; email: string; role: UserRole; organizationId: string } | null> {
   const userInfo = await getUserRole(supabase);
   if (!userInfo) return null;
   if (!hasPermission(userInfo.role, permission)) return null;
-  return userInfo;
+
+  const organizationId = await getUserOrganizationId(supabase);
+  if (!organizationId) return null;
+
+  return { ...userInfo, organizationId };
 }
 
 /**
- * Check auth + RBAC for API routes. Returns user info or an error object
- * with the appropriate HTTP status (401 = not authenticated, 403 = forbidden).
+ * Check auth + RBAC for API routes. Returns user info with org context or an
+ * error object with the appropriate HTTP status (401 = not authenticated,
+ * 403 = forbidden or no organization).
  */
 export async function checkPermission(
   supabase: SupabaseClient,
   permission: Permission
 ): Promise<
-  | { authorized: true; userId: string; email: string; role: UserRole }
+  | { authorized: true; userId: string; email: string; role: UserRole; organizationId: string }
   | { authorized: false; status: 401 | 403; error: string }
 > {
   const userInfo = await getUserRole(supabase);
@@ -127,5 +133,11 @@ export async function checkPermission(
   if (!hasPermission(userInfo.role, permission)) {
     return { authorized: false, status: 403, error: 'Permissao insuficiente' };
   }
-  return { authorized: true, ...userInfo };
+
+  const organizationId = await getUserOrganizationId(supabase);
+  if (!organizationId) {
+    return { authorized: false, status: 403, error: 'Usuario sem organizacao associada' };
+  }
+
+  return { authorized: true, ...userInfo, organizationId };
 }

@@ -95,8 +95,6 @@ export async function POST(request: Request) {
         { status: auth.status }
       );
     }
-    const user = { id: auth.userId, email: auth.email };
-
     const body = await request.json();
     const parsed = tissUploadSchema.safeParse(body);
 
@@ -140,10 +138,11 @@ export async function POST(request: Request) {
         ? JSON.parse(responseText)
         : { success: true, message: 'Upload processado pelo n8n' };
 
-      auditLog(supabase, user.id, {
+      auditLog(supabase, auth.userId, {
         action: 'tiss.upload',
         resource: 'medical_accounts',
         resource_id: accountId,
+        organizationId: auth.organizationId,
         details: { xmlSize: xml.length, processor: 'n8n' },
         ip: getClientIp(request),
       });
@@ -165,7 +164,8 @@ export async function POST(request: Request) {
           tiss_validation_errors: tissResult.errors.length > 0 ? { errors: tissResult.errors } : null,
           status: tissResult.isValid ? 'validated' : 'pending',
         })
-        .eq('id', accountId);
+        .eq('id', accountId)
+        .eq('organization_id', auth.organizationId);
 
       if (updateError) {
         return NextResponse.json(
@@ -175,10 +175,11 @@ export async function POST(request: Request) {
       }
     }
 
-    auditLog(supabase, user.id, {
+    auditLog(supabase, auth.userId, {
       action: 'tiss.upload',
       resource: 'medical_accounts',
       resource_id: accountId,
+      organizationId: auth.organizationId,
       details: { xmlSize: xml.length, processor: 'local', guideNumber: tissResult.guideNumber },
       ip: getClientIp(request),
     });

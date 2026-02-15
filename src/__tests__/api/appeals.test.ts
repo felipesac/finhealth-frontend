@@ -2,12 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockGetUser, mockChain } = vi.hoisted(() => {
   const mockGetUser = vi.fn();
-  const mockChain = {
+  const mockChain: Record<string, ReturnType<typeof vi.fn>> & { then?: unknown } = {
     update: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+    eq: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
-    then: vi.fn().mockResolvedValue({ error: null }),
   };
+  // Make chain thenable so `await supabase.from(...).update(...).eq(...).eq(...)` resolves
+  mockChain.then = vi.fn((resolve: (v: unknown) => void) => resolve({ data: null, error: null }));
   return { mockGetUser, mockChain };
 });
 
@@ -28,8 +29,15 @@ vi.mock('@/lib/audit-logger', () => ({
   getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
 }));
 
+vi.mock('@/lib/rbac', () => ({
+  checkPermission: vi.fn().mockResolvedValue({
+    authorized: true, userId: 'user-1', email: 'test@test.com', role: 'admin', organizationId: 'org-1',
+  }),
+}));
+
 import { PATCH } from '@/app/api/appeals/route';
 import { rateLimit } from '@/lib/rate-limit';
+import { checkPermission } from '@/lib/rbac';
 
 function makeReq(body: unknown) {
   return new Request('http://localhost:3000/api/appeals', {
@@ -45,11 +53,15 @@ describe('PATCH /api/appeals', () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'user-1', email: 'test@test.com' } },
     });
-    mockChain.eq.mockResolvedValue({ data: null, error: null });
+    // Re-establish chain returns after clearAllMocks
+    mockChain.update.mockReturnValue(mockChain);
+    mockChain.eq.mockReturnValue(mockChain);
+    mockChain.insert.mockReturnValue(mockChain);
+    (mockChain as Record<string, unknown>).then = vi.fn((resolve: (v: unknown) => void) => resolve({ data: null, error: null }));
   });
 
   it('returns 401 if not authenticated', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    vi.mocked(checkPermission).mockResolvedValueOnce({ authorized: false, status: 401, error: 'Nao autorizado' });
     const res = await PATCH(makeReq({
       glosaId: '550e8400-e29b-41d4-a716-446655440000',
       text: 'Recurso', action: 'submit',

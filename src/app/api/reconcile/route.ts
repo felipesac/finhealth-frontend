@@ -21,8 +21,6 @@ export async function POST(request: Request) {
     if (!auth.authorized) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    const user = { id: auth.userId, email: auth.email };
-
     const body = await request.json();
     const parsed = reconcileSchema.safeParse(body);
 
@@ -37,6 +35,7 @@ export async function POST(request: Request) {
       .from('payments')
       .select('total_amount, matched_amount, unmatched_amount, reconciliation_status')
       .eq('id', paymentId)
+      .eq('organization_id', auth.organizationId)
       .single();
 
     if (paymentFetchError || !payment) {
@@ -56,6 +55,7 @@ export async function POST(request: Request) {
       .from('medical_accounts')
       .select('total_amount, paid_amount')
       .eq('id', accountId)
+      .eq('organization_id', auth.organizationId)
       .single();
 
     if (accountFetchError || !account) {
@@ -82,7 +82,8 @@ export async function POST(request: Request) {
         reconciliation_status: isFullyMatched ? 'matched' : 'partial',
         reconciled_at: isFullyMatched ? new Date().toISOString() : null,
       })
-      .eq('id', paymentId);
+      .eq('id', paymentId)
+      .eq('organization_id', auth.organizationId);
 
     if (paymentError) throw paymentError;
 
@@ -94,7 +95,8 @@ export async function POST(request: Request) {
         status: 'paid',
         paid_at: new Date().toISOString(),
       })
-      .eq('id', accountId);
+      .eq('id', accountId)
+      .eq('organization_id', auth.organizationId);
 
     if (accountError) {
       // Rollback payment update and verify it succeeded
@@ -119,10 +121,11 @@ export async function POST(request: Request) {
       throw accountError;
     }
 
-    auditLog(supabase, user.id, {
+    auditLog(supabase, auth.userId, {
       action: 'reconcile.match',
       resource: 'payments',
       resource_id: paymentId,
+      organizationId: auth.organizationId,
       details: { accountId, amountMatched: amountToMatch, isFullyMatched },
       ip: getClientIp(request),
     });

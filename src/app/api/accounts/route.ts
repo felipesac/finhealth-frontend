@@ -39,6 +39,7 @@ export async function POST(request: Request) {
       .from('medical_accounts')
       .insert({
         ...parsed.data,
+        organization_id: auth.organizationId,
         status: 'pending',
         approved_amount: 0,
         glosa_amount: 0,
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
       action: 'medical_account.create',
       resource: 'medical_accounts',
       resource_id: inserted.id,
+      organizationId: auth.organizationId,
       details: {
         account_number: parsed.data.account_number,
         account_type: parsed.data.account_type,

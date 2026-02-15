@@ -23,11 +23,10 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ success: false, error: 'Nao autorizado' }, { status: 401 });
-
     const auth = await checkPermission(supabase, 'glosas:write');
-    if (!auth) return NextResponse.json({ success: false, error: 'Sem permissao' }, { status: 403 });
+    if (!auth.authorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    }
 
     const body = await request.json();
     const parsed = bulkGlosaSchema.safeParse(body);
@@ -42,20 +41,22 @@ export async function POST(request: Request) {
       const { error } = await supabase
         .from('glosas')
         .update({ appeal_status })
-        .in('id', ids);
+        .in('id', ids)
+        .eq('organization_id', auth.organizationId);
       if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
 
-      auditLog(supabase, user.id, { action: 'bulk_update_status', resource: 'glosas', details: { ids, appeal_status }, ip });
+      auditLog(supabase, auth.userId, { action: 'bulk_update_status', resource: 'glosas', organizationId: auth.organizationId, details: { ids, appeal_status }, ip });
     }
 
     if (action === 'delete') {
       const { error } = await supabase
         .from('glosas')
         .delete()
-        .in('id', ids);
+        .in('id', ids)
+        .eq('organization_id', auth.organizationId);
       if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
 
-      auditLog(supabase, user.id, { action: 'bulk_delete', resource: 'glosas', details: { ids }, ip });
+      auditLog(supabase, auth.userId, { action: 'bulk_delete', resource: 'glosas', organizationId: auth.organizationId, details: { ids }, ip });
     }
 
     return NextResponse.json({ success: true, count: ids.length });

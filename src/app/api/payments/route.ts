@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     const { data: payments, error, count } = await supabase
       .from('payments')
       .select('*, health_insurer:health_insurers(id, name)', { count: 'exact' })
+      .eq('organization_id', auth.organizationId)
       .order('payment_date', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
       .from('payments')
       .insert({
         ...parsed.data,
+        organization_id: auth.organizationId,
         matched_amount: 0,
         unmatched_amount: parsed.data.total_amount,
         reconciliation_status: 'pending',
@@ -115,6 +117,7 @@ export async function POST(request: Request) {
       action: 'payment.create',
       resource: 'payments',
       resource_id: inserted.id,
+      organizationId: auth.organizationId,
       details: {
         total_amount: parsed.data.total_amount,
         health_insurer_id: parsed.data.health_insurer_id,

@@ -31,8 +31,15 @@ vi.mock('@/lib/audit-logger', () => ({
   getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
 }));
 
+vi.mock('@/lib/rbac', () => ({
+  checkPermission: vi.fn().mockResolvedValue({
+    authorized: true, userId: 'user-1', email: 'test@test.com', role: 'admin', organizationId: 'org-1',
+  }),
+}));
+
 import { POST } from '@/app/api/reconcile/route';
 import { rateLimit } from '@/lib/rate-limit';
+import { checkPermission } from '@/lib/rbac';
 
 function makeReq(body: unknown) {
   return new Request('http://localhost:3000/api/reconcile', {
@@ -56,7 +63,7 @@ describe('POST /api/reconcile', () => {
   });
 
   it('returns 401 if not authenticated', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    vi.mocked(checkPermission).mockResolvedValueOnce({ authorized: false, status: 401, error: 'Nao autorizado' });
     const res = await POST(makeReq(validBody));
     expect(res.status).toBe(401);
   });

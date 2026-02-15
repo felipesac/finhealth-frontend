@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     let query = supabase
       .from('sus_aih')
       .select('*, patient:patients(id, name)')
-      .eq('user_id', auth.userId)
+      .eq('organization_id', auth.organizationId)
       .order('created_at', { ascending: false });
 
     if (status) query = query.eq('status', status);
@@ -113,6 +113,7 @@ export async function POST(request: Request) {
       .from('sus_aih')
       .insert({
         user_id: auth.userId,
+        organization_id: auth.organizationId,
         ...parsed.data,
         diarias,
         status: 'rascunho',
@@ -131,6 +132,7 @@ export async function POST(request: Request) {
       action: 'sus_aih.create',
       resource: 'sus_aih',
       resource_id: inserted.id,
+      organizationId: auth.organizationId,
       details: {
         numero_aih: parsed.data.numero_aih,
         procedimento_principal: parsed.data.procedimento_principal,
