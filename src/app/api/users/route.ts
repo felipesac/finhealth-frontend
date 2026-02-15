@@ -6,6 +6,7 @@ import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
 import { checkPermission } from '@/lib/rbac';
 import { sendNotificationEmail } from '@/lib/email';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -183,7 +184,7 @@ export async function POST(request: Request) {
       });
       emailSent = !!emailResult.success;
     } catch (emailErr) {
-      console.error('[users/invite] Email send failed:', emailErr);
+      logger.error('[users/invite] Email send failed', emailErr as Error);
     }
 
     return NextResponse.json({ success: true, data: profile, tempPassword, emailSent });

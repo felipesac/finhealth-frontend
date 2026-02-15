@@ -76,6 +76,7 @@ export function validateEnvAtBoot(): void {
   }
 
   for (const msg of warnings) {
-    console.warn(`[env] ${msg}`);
+    // Use console.warn here intentionally — logger.ts may import env.ts, causing circular dependency
+    console.warn(JSON.stringify({ level: 'warn', message: `[env] ${msg}`, timestamp: new Date().toISOString() }));
   }
 }

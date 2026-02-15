@@ -1,4 +1,5 @@
 import webpush from 'web-push';
+import { logger } from '@/lib/logger';
 
 let vapidConfigured = false;
 
@@ -27,7 +28,7 @@ export async function sendPushNotification(
   payload: { title: string; body: string; url?: string }
 ) {
   if (!ensureVapid()) {
-    console.warn('[push] VAPID keys not configured, skipping push');
+    logger.warn('[push] VAPID keys not configured, skipping push');
     return { success: false, error: 'VAPID keys not configured' };
   }
 
@@ -42,7 +43,7 @@ export async function sendPushNotification(
     return { success: true };
   } catch (err: unknown) {
     const error = err as { message?: string; statusCode?: number };
-    console.error('[push] Failed to send:', error.message);
+    logger.error('[push] Failed to send', err as Error);
     return { success: false, error: error.message, statusCode: error.statusCode };
   }
 }

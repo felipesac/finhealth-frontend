@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import path from 'path';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Types
@@ -24,6 +25,10 @@ interface SquadClientConfig {
   mode: 'process' | 'http';
   httpBaseUrl?: string;
   timeout: number;
+  maxRetries: number;
+  retryBaseDelayMs: number;
+  /** Injectable sleep for testability */
+  sleepFn?: (ms: number) => Promise<void>;
 }
 
 // ============================================================================
@@ -39,7 +44,30 @@ function resolveDefaults(): SquadClientConfig {
     mode: (process.env.SQUAD_MODE as 'process' | 'http') || 'process',
     httpBaseUrl: process.env.SQUAD_HTTP_URL,
     timeout: Number(process.env.SQUAD_TIMEOUT) || DEFAULT_TIMEOUT,
+    maxRetries: Number(process.env.SQUAD_MAX_RETRIES) || 2,
+    retryBaseDelayMs: Number(process.env.SQUAD_RETRY_DELAY) || 1000,
   };
+}
+
+// ============================================================================
+// Retry helpers
+// ============================================================================
+
+const TRANSIENT_PATTERNS = [
+  'timed out', 'timeout', 'econnreset', 'econnrefused',
+  'spawn', 'process exited', 'no output',
+];
+
+function isTransientError(response: SquadResponse): boolean {
+  if (response.success) return false;
+  if (response.metadata?.timeout) return true;
+  if (response.metadata?.spawnError) return true;
+  const errorText = (response.errors || []).join(' ').toLowerCase();
+  return TRANSIENT_PATTERNS.some((p) => errorText.includes(p));
+}
+
+function defaultSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ============================================================================
@@ -183,19 +211,39 @@ async function executeViaHttp(
 
 export class SquadClient {
   private config: SquadClientConfig;
+  private sleepFn: (ms: number) => Promise<void>;
 
   constructor(config?: Partial<SquadClientConfig>) {
     const defaults = resolveDefaults();
     this.config = { ...defaults, ...config };
+    this.sleepFn = this.config.sleepFn ?? defaultSleep;
   }
 
   async execute(request: SquadRequest, timeout?: number): Promise<SquadResponse> {
     const effectiveTimeout = timeout || this.config.timeout;
+    const maxAttempts = this.config.maxRetries + 1;
 
-    if (this.config.mode === 'http') {
-      return executeViaHttp(this.config, request, effectiveTimeout);
+    let lastResponse: SquadResponse | null = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const response = this.config.mode === 'http'
+        ? await executeViaHttp(this.config, request, effectiveTimeout)
+        : await executeViaProcess(this.config, request, effectiveTimeout);
+
+      if (response.success || !isTransientError(response) || attempt === maxAttempts) {
+        return response;
+      }
+
+      lastResponse = response;
+      const delay = this.config.retryBaseDelayMs * Math.pow(2, attempt - 1);
+      logger.warn(`[squad-client] Transient error, retrying (attempt ${attempt}/${this.config.maxRetries})`, {
+        errors: response.errors,
+        delay,
+      });
+      await this.sleepFn(delay);
     }
-    return executeViaProcess(this.config, request, effectiveTimeout);
+
+    return lastResponse!;
   }
 }
 

@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { logger } from '@/lib/logger';
 
 let _resend: Resend | null = null;
 
@@ -91,7 +92,7 @@ const templates: Record<EmailType, (data: Record<string, string | number>) => st
 export async function sendNotificationEmail({ to, type, subject, data }: SendEmailParams) {
   const resend = getResend();
   if (!resend) {
-    console.warn('[email] RESEND_API_KEY not configured, skipping email');
+    logger.warn('[email] RESEND_API_KEY not configured, skipping email');
     return { success: false, error: 'RESEND_API_KEY not configured' };
   }
 
@@ -105,14 +106,14 @@ export async function sendNotificationEmail({ to, type, subject, data }: SendEma
     });
 
     if (result.error) {
-      console.error('[email] Resend error:', result.error.message);
+      logger.error('[email] Resend error', new Error(result.error.message));
       return { success: false, error: result.error.message };
     }
 
     return { success: true, id: result.data?.id };
   } catch (err: unknown) {
     const error = err as { message?: string };
-    console.error('[email] Failed to send:', error.message);
+    logger.error('[email] Failed to send', err as Error);
     return { success: false, error: error.message };
   }
 }

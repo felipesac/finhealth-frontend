@@ -3,19 +3,22 @@ import { vi } from 'vitest';
 import messages from '../../messages/pt-BR.json';
 
 // Polyfill methods missing in jsdom (needed by Radix UI)
-if (!Element.prototype.hasPointerCapture) {
-  Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
+// Guard for tests running in node environment (e.g. squad-client)
+if (typeof Element !== 'undefined') {
+  if (!Element.prototype.hasPointerCapture) {
+    Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
+  }
+  if (!Element.prototype.setPointerCapture) {
+    Element.prototype.setPointerCapture = vi.fn();
+  }
+  if (!Element.prototype.releasePointerCapture) {
+    Element.prototype.releasePointerCapture = vi.fn();
+  }
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = vi.fn();
+  }
 }
-if (!Element.prototype.setPointerCapture) {
-  Element.prototype.setPointerCapture = vi.fn();
-}
-if (!Element.prototype.releasePointerCapture) {
-  Element.prototype.releasePointerCapture = vi.fn();
-}
-if (!Element.prototype.scrollIntoView) {
-  Element.prototype.scrollIntoView = vi.fn();
-}
-if (!window.HTMLElement.prototype.scrollIntoView) {
+if (typeof window !== 'undefined' && !window.HTMLElement.prototype.scrollIntoView) {
   window.HTMLElement.prototype.scrollIntoView = vi.fn();
 }
 

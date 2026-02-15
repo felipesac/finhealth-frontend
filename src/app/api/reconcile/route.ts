@@ -4,6 +4,7 @@ import { reconcileSchema } from '@/lib/validations';
 import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 import { auditLog, getClientIp } from '@/lib/audit-logger';
 import { checkPermission } from '@/lib/rbac';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -111,7 +112,7 @@ export async function POST(request: Request) {
         .eq('id', paymentId);
 
       if (rollbackError) {
-        console.error('CRITICAL: Rollback failed for payment', paymentId, rollbackError);
+        logger.error('CRITICAL: Rollback failed for payment', rollbackError as Error, { paymentId });
         return NextResponse.json(
           { success: false, error: 'Erro critico na conciliacao. Contate o administrador.' },
           { status: 500 }

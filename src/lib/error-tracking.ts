@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/logger';
 
 type Severity = 'fatal' | 'error' | 'warning' | 'info';
@@ -9,47 +10,36 @@ interface ErrorContext {
   extra?: Record<string, unknown>;
 }
 
-/**
- * Capture an exception for error tracking.
- * Replace the implementation with Sentry when ready:
- *   import * as Sentry from '@sentry/nextjs';
- *   Sentry.captureException(error, { extra: context });
- */
+// =============================================================================
+// Public API
+// =============================================================================
+
 export function captureException(error: unknown, context?: ErrorContext): void {
   const message = error instanceof Error ? error.message : String(error);
-  const stack = error instanceof Error ? error.stack : undefined;
-
   logger.error('[error-tracking] ' + message, error, context);
+  Sentry.captureException(error, { extra: context });
 }
 
-/**
- * Capture a message for error tracking.
- */
 export function captureMessage(message: string, severity: Severity = 'info', context?: ErrorContext): void {
   if (severity === 'fatal' || severity === 'error') {
     logger.error(`[error-tracking] [${severity}] ${message}`, undefined, context);
   } else {
     logger.warn(`[error-tracking] [${severity}] ${message}`, context);
   }
+  Sentry.captureMessage(message, { level: severity });
 }
 
-/**
- * Set user context for error tracking.
- */
 export function setUser(user: { id: string; email?: string } | null): void {
-  // Replace with Sentry.setUser(user) when ready
   if (user) {
     logger.debug('[error-tracking] User set', { userId: user.id });
   }
+  Sentry.setUser(user);
 }
 
 // =============================================================================
 // Sentry PII Scrubbing Configuration (LGPD Compliance)
 // =============================================================================
-// Activate these hooks when initializing Sentry to prevent PII leaks.
-// Usage in sentry.client.config.ts / sentry.server.config.ts:
-//   import { SENTRY_PII_CONFIG } from '@/lib/error-tracking';
-//   Sentry.init({ dsn: '...', ...SENTRY_PII_CONFIG });
+// These hooks are spread into Sentry.init() in sentry.*.config.ts files.
 // =============================================================================
 
 const CPF_PATTERN = /\d{3}\.\d{3}\.\d{3}-\d{2}/g;
@@ -64,19 +54,16 @@ function scrubPiiFromString(text: string): string {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const SENTRY_PII_CONFIG = {
   beforeSend(event: any) {
-    // Strip user email from event context
     if (event.user) {
       delete event.user.email;
       delete event.user.username;
       delete event.user.ip_address;
     }
 
-    // Scrub CPF patterns from request body
     if (event.request?.data && typeof event.request.data === 'string') {
       event.request.data = scrubPiiFromString(event.request.data);
     }
 
-    // Scrub CPF from exception messages
     if (event.exception?.values) {
       for (const ex of event.exception.values) {
         if (ex.value && typeof ex.value === 'string') {
