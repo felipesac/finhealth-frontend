@@ -6,8 +6,15 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let userEmail: string | undefined;
 
-  return <AppShell userEmail={user?.email}>{children}</AppShell>;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    userEmail = data?.user?.email ?? undefined;
+  } catch {
+    // Supabase unavailable or auth error — render shell without user info
+  }
+
+  return <AppShell userEmail={userEmail}>{children}</AppShell>;
 }

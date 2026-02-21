@@ -1,21 +1,20 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+
+export const metadata: Metadata = {
+  title: 'Detalhes da Conta | FinHealth',
+  description: 'Detalhes da conta medica',
+};
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { StatusBadge } from '@/components/accounts';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { ArrowLeft, FileText } from 'lucide-react';
-import type { MedicalAccount, Procedure } from '@/types';
+import { ProcedureManagement } from '@/components/procedures/ProcedureManagement';
+import type { MedicalAccount } from '@/types';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -36,15 +35,8 @@ async function getAccountData(id: string) {
 
   if (!account) return null;
 
-  const { data: procedures } = await supabase
-    .from('procedures')
-    .select('*')
-    .eq('medical_account_id', id)
-    .order('created_at');
-
   return {
     account: account as MedicalAccount,
-    procedures: (procedures || []) as Procedure[],
   };
 }
 
@@ -56,26 +48,26 @@ export default async function ContaDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const { account, procedures } = data;
+  const { account } = data;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Link href="/contas">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold">{account.account_number}</h1>
-          <p className="text-muted-foreground">Detalhes da conta medica</p>
+        <div className="flex-1">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{account.account_number}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Detalhes da conta medica</p>
         </div>
-        <div className="ml-auto">
+        <div>
           <StatusBadge status={account.status} />
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Informacoes Gerais</CardTitle>
@@ -165,38 +157,8 @@ export default async function ContaDetailPage({ params }: PageProps) {
       )}
 
       <Card>
-        <CardHeader>
-          <CardTitle>Procedimentos ({procedures.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Codigo TUSS</TableHead>
-                <TableHead>Descricao</TableHead>
-                <TableHead>Qtd</TableHead>
-                <TableHead>Valor Unit.</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {procedures.map((proc) => (
-                <TableRow key={proc.id}>
-                  <TableCell className="font-mono">{proc.tuss_code || '-'}</TableCell>
-                  <TableCell>{proc.description}</TableCell>
-                  <TableCell>{proc.quantity}</TableCell>
-                  <TableCell>{formatCurrency(proc.unit_price)}</TableCell>
-                  <TableCell>{formatCurrency(proc.total_price)}</TableCell>
-                  <TableCell>
-                    <Badge variant={proc.status === 'pending' ? 'secondary' : 'default'}>
-                      {proc.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="pt-6">
+          <ProcedureManagement accountId={id} />
         </CardContent>
       </Card>
     </div>

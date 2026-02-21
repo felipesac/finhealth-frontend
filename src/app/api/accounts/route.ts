@@ -1,0 +1,146 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { createAccountSchema } from '@/lib/validations';
+import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
+import { auditLog, getClientIp } from '@/lib/audit-logger';
+import { checkPermission } from '@/lib/rbac';
+
+export async function GET(request: Request) {
+  try {
+    const rlKey = getRateLimitKey(request, 'accounts-list');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
+    const supabase = await createClient();
+    const auth = await checkPermission(supabase, 'accounts:read');
+    if (!auth.authorized) {
+      return NextResponse.json(
+        { success: false, error: auth.error },
+        { status: auth.status }
+      );
+    }
+
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
+    const offset = (page - 1) * limit;
+    const status = url.searchParams.get('status');
+    const search = url.searchParams.get('search');
+
+    let query = supabase
+      .from('medical_accounts')
+      .select('*, patient:patients(id, name), health_insurer:health_insurers(id, name)', { count: 'exact' })
+      .eq('organization_id', auth.organizationId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (status) query = query.eq('status', status);
+    if (search) query = query.or(`account_number.ilike.%${search}%`);
+
+    const { data: accounts, error, count } = await query;
+
+    if (error) {
+      return NextResponse.json(
+        { success: false, error: `Falha ao listar contas: ${error.message}` },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: accounts || [],
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit),
+      },
+    });
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return NextResponse.json(
+      { success: false, error: err.message || 'Falha ao listar contas medicas' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const rlKey = getRateLimitKey(request, 'accounts-create');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 20, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
+    const supabase = await createClient();
+    const auth = await checkPermission(supabase, 'accounts:write');
+    if (!auth.authorized) {
+      return NextResponse.json(
+        { success: false, error: auth.error },
+        { status: auth.status }
+      );
+    }
+
+    const body = await request.json();
+    const parsed = createAccountSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.issues[0].message },
+        { status: 400 }
+      );
+    }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('medical_accounts')
+      .insert({
+        ...parsed.data,
+        organization_id: auth.organizationId,
+        status: 'pending',
+        approved_amount: 0,
+        glosa_amount: 0,
+        paid_amount: 0,
+        metadata: {},
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      return NextResponse.json(
+        { success: false, error: `Falha ao criar conta: ${insertError.message}` },
+        { status: 500 }
+      );
+    }
+
+    auditLog(supabase, auth.userId, {
+      action: 'medical_account.create',
+      resource: 'medical_accounts',
+      resource_id: inserted.id,
+      organizationId: auth.organizationId,
+      details: {
+        account_number: parsed.data.account_number,
+        account_type: parsed.data.account_type,
+        total_amount: parsed.data.total_amount,
+        health_insurer_id: parsed.data.health_insurer_id,
+      },
+      ip: getClientIp(request),
+    });
+
+    return NextResponse.json({ success: true, data: inserted });
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    return NextResponse.json(
+      { success: false, error: err.message || 'Falha ao criar conta medica' },
+      { status: 500 }
+    );
+  }
+}

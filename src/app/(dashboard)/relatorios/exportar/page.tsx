@@ -7,14 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ArrowLeft, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { ArrowLeft, Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const dataTypes = [
@@ -27,7 +20,7 @@ const dataTypes = [
 
 export default function ExportarPage() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['accounts']);
-  const [format, setFormat] = useState('xlsx');
+  const [format] = useState('csv');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -51,34 +44,70 @@ export default function ExportarPage() {
 
     setExporting(true);
 
-    // Simulate export process
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const res = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          types: selectedTypes,
+          format,
+          dateFrom: dateFrom || undefined,
+          dateTo: dateTo || undefined,
+        }),
+      });
 
-    toast({
-      title: 'Exportacao concluida',
-      description: `Arquivo ${format.toUpperCase()} gerado com sucesso`,
-    });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Falha na exportacao');
+      }
 
-    setExporting(false);
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') || '';
+      const filenameMatch = disposition.match(/filename="([^"]+)"/);
+      const filename = filenameMatch ? filenameMatch[1] : `finhealth-export.csv`;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Exportacao concluida',
+        description: `Arquivo CSV gerado com sucesso`,
+      });
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      toast({
+        title: 'Erro na exportacao',
+        description: error.message || 'Tente novamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Link href="/relatorios">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">Exportar Dados</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Exportar Dados</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Exporte dados do sistema para Excel ou PDF
           </p>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 sm:gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Selecione os Dados</CardTitle>
@@ -147,31 +176,10 @@ export default function ExportarPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Select value={format} onValueChange={setFormat}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o formato" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="xlsx">
-                    <div className="flex items-center gap-2">
-                      <FileSpreadsheet className="h-4 w-4" />
-                      Excel (.xlsx)
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="csv">
-                    <div className="flex items-center gap-2">
-                      <FileSpreadsheet className="h-4 w-4" />
-                      CSV (.csv)
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="pdf">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      PDF (.pdf)
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <FileSpreadsheet className="h-4 w-4" />
+                CSV (.csv)
+              </div>
 
               <Button
                 className="w-full"

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ans:mensagemTISS xmlns:ans="http://www.ans.gov.br/padroes/tiss/schemas" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ans:cabecalho>
+    <ans:identificacaoTransacao>
+      <ans:tipoTransacao>ENVIO_LOTE_GUIAS</ans:tipoTransacao>
+      <ans:sequencialTransacao>1</ans:sequencialTransacao>
+      <ans:dataRegistroTransacao>2024-01-15</ans:dataRegistroTransacao>
+      <ans:horaRegistroTransacao>10:30:00</ans:horaRegistroTransacao>
+    </ans:identificacaoTransacao>
+    <ans:origem>
+      <ans:identificacaoPrestador>
+        <ans:CNPJ>12345678000199</ans:CNPJ>
+      </ans:identificacaoPrestador>
+    </ans:origem>
+    <ans:destino>
+      <ans:registroANS>123456</ans:registroANS>
+    </ans:destino>
+    <ans:versaoPadrao>3.05.00</ans:versaoPadrao>
+  </ans:cabecalho>
+  <ans:prestadorParaOperadora>
+    <ans:loteGuias>
+      <ans:numeroLote>1</ans:numeroLote>
+      <ans:guiasTISS>
+        <ans:guiaSP-SADT>
+          <ans:cabecalhoGuia>
+            <ans:registroANS>123456</ans:registroANS>
+            <ans:numeroGuiaPrestador>TEST-001</ans:numeroGuiaPrestador>
+          </ans:cabecalhoGuia>
+        </ans:guiaSP-SADT>
+      </ans:guiasTISS>
+    </ans:loteGuias>
+  </ans:prestadorParaOperadora>
+</ans:mensagemTISS>

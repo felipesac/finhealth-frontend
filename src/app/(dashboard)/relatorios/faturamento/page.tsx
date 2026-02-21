@@ -1,5 +1,11 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+
+export const metadata: Metadata = {
+  title: 'Faturamento Mensal | FinHealth',
+  description: 'Relatorio de faturamento por periodo e operadora',
+};
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,33 +16,54 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { ExportButton } from '@/components/reports/ExportButton';
 import { formatCurrency } from '@/lib/formatters';
 
 async function getBillingData() {
   const supabase = await createClient();
 
-  const { data: insurers } = await supabase
-    .from('health_insurers')
-    .select('id, name');
+  const [insurersRes, accountsRes, glosasRes, paymentsRes] = await Promise.all([
+    supabase.from('health_insurers').select('id, name'),
+    supabase.from('medical_accounts').select('id, health_insurer_id, total_amount'),
+    supabase.from('glosas').select('medical_account_id, glosa_amount'),
+    supabase.from('payments').select('health_insurer_id, total_amount'),
+  ]);
 
-  const { data: accounts } = await supabase
-    .from('medical_accounts')
-    .select('health_insurer_id, total_amount, glosa_amount, paid_amount');
+  const insurers = insurersRes.data || [];
+  const accounts = accountsRes.data || [];
+  const glosas = glosasRes.data || [];
+  const payments = paymentsRes.data || [];
+
+  // Map account id → health_insurer_id for glosa aggregation
+  const accountInsurer = new Map<string, string>();
+  accounts.forEach((a) => {
+    if (a.health_insurer_id) accountInsurer.set(a.id, a.health_insurer_id);
+  });
 
   // Aggregate by insurer
   const insurerMap = new Map<string, { name: string; total: number; glosa: number; paid: number }>();
 
-  (insurers || []).forEach((insurer) => {
+  insurers.forEach((insurer) => {
     insurerMap.set(insurer.id, { name: insurer.name, total: 0, glosa: 0, paid: 0 });
   });
 
-  (accounts || []).forEach((account) => {
+  accounts.forEach((account) => {
     if (account.health_insurer_id && insurerMap.has(account.health_insurer_id)) {
-      const data = insurerMap.get(account.health_insurer_id)!;
-      data.total += account.total_amount || 0;
-      data.glosa += account.glosa_amount || 0;
-      data.paid += account.paid_amount || 0;
+      insurerMap.get(account.health_insurer_id)!.total += account.total_amount || 0;
+    }
+  });
+
+  glosas.forEach((g) => {
+    const insurerId = g.medical_account_id ? accountInsurer.get(g.medical_account_id) : null;
+    if (insurerId && insurerMap.has(insurerId)) {
+      insurerMap.get(insurerId)!.glosa += g.glosa_amount || 0;
+    }
+  });
+
+  payments.forEach((p) => {
+    if (p.health_insurer_id && insurerMap.has(p.health_insurer_id)) {
+      insurerMap.get(p.health_insurer_id)!.paid += p.total_amount || 0;
     }
   });
 
@@ -47,7 +74,12 @@ async function getBillingData() {
 }
 
 export default async function FaturamentoPage() {
-  const billingData = await getBillingData();
+  let billingData: Awaited<ReturnType<typeof getBillingData>> = [];
+  try {
+    billingData = await getBillingData();
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   const totals = billingData.reduce(
     (acc, item) => ({
@@ -59,26 +91,23 @@ export default async function FaturamentoPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Link href="/relatorios">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">Faturamento Mensal</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Faturamento Mensal</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Relatorio de faturamento por operadora
           </p>
         </div>
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Exportar
-        </Button>
+        <ExportButton dataType="accounts" />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 sm:gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Faturado</CardTitle>

@@ -1,5 +1,11 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+
+export const metadata: Metadata = {
+  title: 'Glosas por Operadora | FinHealth',
+  description: 'Analise de glosas agrupadas por operadora de saude',
+};
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,7 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { ExportButton } from '@/components/reports/ExportButton';
 import { formatCurrency } from '@/lib/formatters';
 
 async function getGlosasData() {
@@ -27,6 +34,13 @@ async function getGlosasData() {
       )
     `);
 
+  interface GlosaWithInsurer {
+    glosa_amount: number;
+    glosa_type: string | null;
+    appeal_status: string | null;
+    medical_account: { health_insurer: { id: string; name: string } | null } | null;
+  }
+
   // Aggregate by insurer
   const insurerMap = new Map<
     string,
@@ -41,8 +55,7 @@ async function getGlosasData() {
     }
   >();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (glosas || []).forEach((glosa: any) => {
+  ((glosas || []) as unknown as GlosaWithInsurer[]).forEach((glosa) => {
     const insurerId = glosa.medical_account?.health_insurer?.id;
     const insurerName = glosa.medical_account?.health_insurer?.name;
 
@@ -78,7 +91,12 @@ async function getGlosasData() {
 }
 
 export default async function GlosasOperadoraPage() {
-  const glosasData = await getGlosasData();
+  let glosasData: Awaited<ReturnType<typeof getGlosasData>> = [];
+  try {
+    glosasData = await getGlosasData();
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   const totals = glosasData.reduce(
     (acc, item) => ({
@@ -91,26 +109,23 @@ export default async function GlosasOperadoraPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Link href="/relatorios">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">Glosas por Operadora</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Glosas por Operadora</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Analise de glosas agrupadas por operadora
           </p>
         </div>
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Exportar
-        </Button>
+        <ExportButton dataType="glosas" />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Glosado</CardTitle>
