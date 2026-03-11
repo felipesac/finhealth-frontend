@@ -40,7 +40,7 @@ const ENTRY_POINT = 'src/entry.ts';
 
 function resolveDefaults(): SquadClientConfig {
   return {
-    squadPath: process.env.SQUAD_PATH || path.resolve(process.cwd(), '..', 'aios-core', 'squads', 'finhealth-squad'),
+    squadPath: process.env.SQUAD_PATH || path.resolve(process.cwd(), 'aios-core', 'squads', 'finhealth-squad'),
     mode: (process.env.SQUAD_MODE as 'process' | 'http') || 'process',
     httpBaseUrl: process.env.SQUAD_HTTP_URL,
     timeout: Number(process.env.SQUAD_TIMEOUT) || DEFAULT_TIMEOUT,
