@@ -412,16 +412,6 @@ Server state is fetched directly via Supabase queries in Server Components or vi
 | GET/POST | `/api/users` | admin:all | User management |
 | PUT/DELETE | `/api/users/[id]` | admin:all | User CRUD by ID |
 
-### 6.2 N8N Webhook Integrations
-
-External automation endpoints (configured via env vars, not internal API routes):
-
-| Webhook | Purpose |
-|---------|---------|
-| `N8N_TISS_WEBHOOK_URL` | TISS file processing automation |
-| `N8N_BILLING_WEBHOOK_URL` | Billing agent automation |
-| `N8N_GLOSA_WEBHOOK_URL` | Glosa notification automation |
-
 ---
 
 ## 7. Security Architecture
@@ -593,7 +583,6 @@ Fire-and-forget audit logging to `audit_logs` table. Captures: action, resource,
 │                 │──── Resend (Transactional Email)
 │                 │──── Web Push (VAPID Push Notifications)
 │                 │──── Sentry (Error Monitoring)
-│                 │──── N8N (Webhook Automations)
 │                 │──── Vercel (Hosting + CDN)
 └─────────────────┘
 ```
@@ -615,9 +604,6 @@ Supabase Realtime via PostgreSQL LISTEN/NOTIFY:
 | `NEXT_PUBLIC_SUPABASE_URL` | Client+Server | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client+Server | Supabase anonymous key |
 | `NEXT_PUBLIC_APP_URL` | Client+Server | Application base URL |
-| `N8N_TISS_WEBHOOK_URL` | Server | N8N TISS automation |
-| `N8N_BILLING_WEBHOOK_URL` | Server | N8N billing automation |
-| `N8N_GLOSA_WEBHOOK_URL` | Server | N8N glosa automation |
 | `RESEND_API_KEY` | Server | Resend email API key |
 | `RESEND_FROM_EMAIL` | Server | Sender email address |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Client | VAPID public key for push |
