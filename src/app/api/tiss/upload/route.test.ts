@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.hoisted(() => {
-  process.env.N8N_TISS_WEBHOOK_URL = '';
+  // Ensure clean env for tests
 });
 
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
@@ -65,8 +65,6 @@ function mockSupabaseUpdate(error: { message: string } | null = null) {
 describe('POST /api/tiss/upload', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.N8N_TISS_WEBHOOK_URL = 'http://localhost:5678/webhook/tiss';
-    global.fetch = vi.fn();
   });
 
   it('returns 429 when rate limited', async () => {
@@ -97,45 +95,6 @@ describe('POST /api/tiss/upload', () => {
     expect(res.status).toBe(400);
   });
 
-  it('uploads XML and returns n8n result', async () => {
-    allowRate(); allowAuth();
-    (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({});
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ok: true,
-      text: vi.fn().mockResolvedValue(JSON.stringify({ success: true, guides: 3 })),
-    });
-
-    const res = await POST(makeReq(validBody));
-    expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json.success).toBe(true);
-    expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:5678/webhook/tiss',
-      expect.objectContaining({ method: 'POST' }),
-    );
-  });
-
-  it('returns error when n8n webhook fails', async () => {
-    allowRate(); allowAuth();
-    (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({});
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ok: false,
-      status: 502,
-      text: vi.fn().mockResolvedValue('Bad Gateway'),
-    });
-
-    const res = await POST(makeReq(validBody));
-    expect(res.status).toBe(502);
-  });
-});
-
-describe('POST /api/tiss/upload (local processing)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    process.env.N8N_TISS_WEBHOOK_URL = '';
-    global.fetch = vi.fn();
-  });
-
   it('processes valid TISS XML locally and updates account', async () => {
     allowRate(); allowAuth();
     const update = mockSupabaseUpdate();
@@ -147,7 +106,6 @@ describe('POST /api/tiss/upload (local processing)', () => {
     expect(json.isValid).toBe(true);
     expect(json.guideNumber).toBe('12345');
     expect(json.message).toBe('Guia TISS processada com sucesso');
-    expect(global.fetch).not.toHaveBeenCalled();
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
         tiss_guide_number: '12345',

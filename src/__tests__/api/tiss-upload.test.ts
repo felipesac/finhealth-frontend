@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Must run before module import - route reads env at module scope
 const { mockGetUser } = vi.hoisted(() => {
-  process.env.N8N_TISS_WEBHOOK_URL = 'https://n8n.test.local/webhook/tiss-upload';
   const mockGetUser = vi.fn();
   return { mockGetUser };
 });
@@ -58,7 +56,6 @@ describe('POST /api/tiss/upload', () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'user-1', email: 'test@test.com' } },
     });
-    vi.stubGlobal('fetch', vi.fn());
   });
 
   it('returns 401 when not authenticated', async () => {
@@ -86,36 +83,10 @@ describe('POST /api/tiss/upload', () => {
     expect(res.status).toBe(429);
   });
 
-  it('handles n8n error response', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
-      new Response('Internal error', { status: 502 })
-    );
-    const res = await POST(makeReq({ xml: VALID_XML }));
-    expect(res.status).toBe(502);
-    const json = await res.json();
-    expect(json.success).toBe(false);
-  });
-
-  it('handles n8n 200 with JSON body', async () => {
-    const n8nResult = { success: true, isValid: true, errors: [], guideNumber: 'G-001' };
-    vi.mocked(fetch).mockResolvedValueOnce(
-      new Response(JSON.stringify(n8nResult), { status: 200 })
-    );
+  it('processes valid TISS XML and returns validation result', async () => {
     const res = await POST(makeReq({ xml: VALID_XML }));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(true);
-    expect(json.guideNumber).toBe('G-001');
-  });
-
-  it('handles n8n 200 with empty body gracefully', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
-      new Response('', { status: 200 })
-    );
-    const res = await POST(makeReq({ xml: VALID_XML }));
-    expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json.success).toBe(true);
-    expect(json.message).toBe('Upload processado pelo n8n');
   });
 });

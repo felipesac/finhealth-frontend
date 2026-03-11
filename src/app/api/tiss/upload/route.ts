@@ -116,41 +116,7 @@ export async function POST(request: Request) {
 
     const xml = sanitizeXml(rawXml);
 
-    // When N8N webhook is configured, delegate to n8n
-    const n8nWebhookUrl = process.env.N8N_TISS_WEBHOOK_URL;
-    if (n8nWebhookUrl) {
-      const n8nResponse = await fetch(n8nWebhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ xml, accountId }),
-      });
-
-      if (!n8nResponse.ok) {
-        const errorText = await n8nResponse.text();
-        return NextResponse.json(
-          { success: false, error: `Erro no webhook n8n: ${n8nResponse.status}`, details: errorText },
-          { status: n8nResponse.status }
-        );
-      }
-
-      const responseText = await n8nResponse.text();
-      const result = responseText
-        ? JSON.parse(responseText)
-        : { success: true, message: 'Upload processado pelo n8n' };
-
-      auditLog(supabase, auth.userId, {
-        action: 'tiss.upload',
-        resource: 'medical_accounts',
-        resource_id: accountId,
-        organizationId: auth.organizationId,
-        details: { xmlSize: xml.length, processor: 'n8n' },
-        ip: getClientIp(request),
-      });
-
-      return NextResponse.json(result);
-    }
-
-    // Local processing: validate XML and save to Supabase
+    // Validate XML and save to Supabase
     const tissResult = parseTissXml(xml);
 
     if (accountId) {

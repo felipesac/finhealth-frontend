@@ -452,7 +452,6 @@ updated_at                  TIMESTAMPTZ DEFAULT NOW()
 - All 14 tables have RLS enabled
 - Notifications, certificates, SUS BPA/AIH properly scoped to user_id
 - Audit logs have admin escalation via `is_admin()` function
-- Service role bypass available for N8N webhook operations
 - Partial UNIQUE index on certificates ensures one active cert per user
 
 **Concerns:**
@@ -703,7 +702,7 @@ All primary keys use UUID with `gen_random_uuid()` - consistent pattern.
 | 001 | Initial | Core schema | patients, health_insurers, medical_accounts, procedures, glosas, payments, notifications | - |
 | 002 | - | TUSS reference table | tuss_procedures (75 seed rows) | - |
 | 003 | - | Audit & roles | audit_logs | - |
-| 004 | - | N8N glosa alerts | glosa_notifications | - |
+| 004 | - | Glosa notifications | glosa_notifications | - |
 | 005 | - | Digital certs | digital_certificates | - |
 | 006 | - | SUS module | sus_procedures, sus_bpa, sus_aih | - |
 | 007 | - | SUS classification | - | sus_procedures (7 new columns, 3 indexes) |

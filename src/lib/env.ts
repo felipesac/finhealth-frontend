@@ -26,11 +26,6 @@ export const env = {
   // App
   get NEXT_PUBLIC_APP_URL() { return optionalEnv('NEXT_PUBLIC_APP_URL') || 'http://localhost:3000'; },
 
-  // N8N Integration
-  get N8N_TISS_WEBHOOK_URL() { return optionalEnv('N8N_TISS_WEBHOOK_URL'); },
-  get N8N_BILLING_WEBHOOK_URL() { return optionalEnv('N8N_BILLING_WEBHOOK_URL'); },
-  get N8N_GLOSA_WEBHOOK_URL() { return optionalEnv('N8N_GLOSA_WEBHOOK_URL'); },
-
   // Email (Resend)
   get RESEND_API_KEY() { return optionalEnv('RESEND_API_KEY'); },
   get RESEND_FROM_EMAIL() { return optionalEnv('RESEND_FROM_EMAIL'); },
@@ -62,7 +57,6 @@ export function validateEnvAtBoot(): void {
   const warnings: string[] = [];
 
   const optionalGroups: Record<string, string[]> = {
-    'N8N Integration': ['N8N_TISS_WEBHOOK_URL', 'N8N_BILLING_WEBHOOK_URL', 'N8N_GLOSA_WEBHOOK_URL'],
     'Email': ['RESEND_API_KEY', 'RESEND_FROM_EMAIL'],
     'Push Notifications': ['NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT'],
     'Sentry': ['NEXT_PUBLIC_SENTRY_DSN', 'SENTRY_ORG', 'SENTRY_PROJECT'],

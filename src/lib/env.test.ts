@@ -19,12 +19,6 @@ describe('env', () => {
     expect(() => env.NEXT_PUBLIC_SUPABASE_URL).toThrow('Missing required environment variable');
   });
 
-  it('optionalEnv returns undefined when not set', async () => {
-    delete process.env.N8N_TISS_WEBHOOK_URL;
-    const { env } = await import('@/lib/env');
-    expect(env.N8N_TISS_WEBHOOK_URL).toBeUndefined();
-  });
-
   it('NEXT_PUBLIC_APP_URL defaults to localhost', async () => {
     delete process.env.NEXT_PUBLIC_APP_URL;
     const { env } = await import('@/lib/env');
