@@ -1,13 +1,18 @@
+import { getTranslations } from 'next-intl/server';
 import { LoginForm } from '@/components/auth/LoginForm';
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const t = await getTranslations('auth');
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-[420px] space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-primary">FinHealth</h1>
-          <p className="mt-2 text-muted-foreground">
-            Sistema de Gestao Financeira Hospitalar
+          <h1 className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            FinHealth
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t('systemDescription')}
           </p>
         </div>
         <LoginForm />

@@ -1,13 +1,21 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+
+export const metadata: Metadata = {
+  title: 'Detalhes da Glosa | FinHealth',
+  description: 'Detalhes da glosa e recurso',
+};
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency, formatDate } from '@/lib/formatters';
-import { ArrowLeft, Sparkles, Send } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
+import { AppealForm } from '@/components/glosas/AppealForm';
+import { ScoreRiskButton } from '@/components/glosas/ScoreRiskButton';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { Glosa, AppealStatus, GlosaType } from '@/types';
 
 interface PageProps {
@@ -56,29 +64,29 @@ export default async function GlosaDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const status = appealStatusConfig[glosa.appeal_status];
-  const successPercentage = (glosa.success_probability || 0) * 100;
+  const status = appealStatusConfig[glosa.appeal_status] || { label: glosa.appeal_status || 'Desconhecido', variant: 'secondary' as const };
+  const successPercentage = glosa.success_probability || 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Link href="/glosas">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold">Glosa {glosa.glosa_code}</h1>
-          <p className="text-muted-foreground">
+        <div className="flex-1">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Glosa {glosa.glosa_code}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             {glosa.glosa_description || 'Detalhes da glosa'}
           </p>
         </div>
-        <div className="ml-auto">
+        <div>
           <Badge variant={status.variant}>{status.label}</Badge>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Informacoes da Glosa</CardTitle>
@@ -139,6 +147,23 @@ export default async function GlosaDetailPage({ params }: PageProps) {
         </Card>
       </div>
 
+      {!glosa.ai_recommendation && glosa.medical_account_id && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              Analise de IA
+            </CardTitle>
+            <CardDescription>
+              Gere uma analise de risco e recomendacao automatica para esta glosa
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ScoreRiskButton accountId={glosa.medical_account_id} />
+          </CardContent>
+        </Card>
+      )}
+
       {glosa.ai_recommendation && (
         <Card>
           <CardHeader>
@@ -158,28 +183,13 @@ export default async function GlosaDetailPage({ params }: PageProps) {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Texto do Recurso</CardTitle>
-          <CardDescription>
-            Edite o texto do recurso antes de enviar
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            placeholder="Digite a fundamentacao do recurso..."
-            rows={8}
-            defaultValue={glosa.appeal_text || glosa.ai_recommendation || ''}
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline">Salvar Rascunho</Button>
-            <Button>
-              <Send className="mr-2 h-4 w-4" />
-              Enviar Recurso
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <ErrorBoundary fallbackMessage="Erro ao carregar formulario de recurso.">
+        <AppealForm
+          glosaId={glosa.id}
+          initialText={glosa.appeal_text || glosa.ai_recommendation || ''}
+          appealStatus={glosa.appeal_status}
+        />
+      </ErrorBoundary>
     </div>
   );
 }

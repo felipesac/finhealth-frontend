@@ -1,7 +1,9 @@
 'use client';
 
-import { useFiltersStore } from '@/stores/filters-store';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useCallback, useState, useEffect, useTransition } from 'react';
 import { Input } from '@/components/ui/input';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
   Select,
   SelectContent,
@@ -10,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, X } from 'lucide-react';
+import { Search, X, Loader2 } from 'lucide-react';
 import type { HealthInsurer } from '@/types';
 
 interface AccountFiltersProps {
@@ -18,7 +20,43 @@ interface AccountFiltersProps {
 }
 
 export function AccountFilters({ insurers }: AccountFiltersProps) {
-  const { accounts, setAccountFilters, resetFilters } = useFiltersStore();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  const status = searchParams.get('status') || 'all';
+  const type = searchParams.get('type') || 'all';
+  const insurerId = searchParams.get('insurerId') || 'all';
+  const search = searchParams.get('search') || '';
+  const [searchInput, setSearchInput] = useState(search);
+  const debouncedSearch = useDebounce(searchInput, 400);
+
+  useEffect(() => {
+    if (debouncedSearch !== search) {
+      updateFilter('search', debouncedSearch);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  const updateFilter = useCallback((key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value && value !== 'all' && value !== '') {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    params.delete('page'); // Reset to page 1 on filter change
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
+  }, [router, pathname, searchParams]);
+
+  const resetFilters = useCallback(() => {
+    startTransition(() => {
+      router.push(pathname);
+    });
+  }, [router, pathname]);
 
   return (
     <div className="flex flex-wrap items-center gap-4">
@@ -26,15 +64,15 @@ export function AccountFilters({ insurers }: AccountFiltersProps) {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Buscar por numero..."
-          value={accounts.search}
-          onChange={(e) => setAccountFilters({ search: e.target.value })}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           className="pl-9"
         />
       </div>
 
       <Select
-        value={accounts.status}
-        onValueChange={(value) => setAccountFilters({ status: value as typeof accounts.status })}
+        value={status}
+        onValueChange={(value) => updateFilter('status', value)}
       >
         <SelectTrigger className="w-[150px]">
           <SelectValue placeholder="Status" />
@@ -51,8 +89,8 @@ export function AccountFilters({ insurers }: AccountFiltersProps) {
       </Select>
 
       <Select
-        value={accounts.type}
-        onValueChange={(value) => setAccountFilters({ type: value as typeof accounts.type })}
+        value={type}
+        onValueChange={(value) => updateFilter('type', value)}
       >
         <SelectTrigger className="w-[150px]">
           <SelectValue placeholder="Tipo" />
@@ -67,8 +105,8 @@ export function AccountFilters({ insurers }: AccountFiltersProps) {
       </Select>
 
       <Select
-        value={accounts.insurerId}
-        onValueChange={(value) => setAccountFilters({ insurerId: value })}
+        value={insurerId}
+        onValueChange={(value) => updateFilter('insurerId', value)}
       >
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Operadora" />
@@ -83,8 +121,8 @@ export function AccountFilters({ insurers }: AccountFiltersProps) {
         </SelectContent>
       </Select>
 
-      <Button variant="ghost" size="icon" onClick={resetFilters}>
-        <X className="h-4 w-4" />
+      <Button variant="ghost" size="icon" onClick={resetFilters} disabled={isPending}>
+        {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
       </Button>
     </div>
   );

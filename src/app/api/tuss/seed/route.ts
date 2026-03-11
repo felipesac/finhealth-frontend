@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { createClient } from '@/lib/supabase/server';
+import { checkPermission } from '@/lib/rbac';
+import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 // Common TUSS procedures data
 const TUSS_PROCEDURES = [
@@ -66,7 +63,7 @@ const TUSS_PROCEDURES = [
   { code: '40101010', description: 'Eletrocardiograma (ECG)', chapter: 'Procedimentos Diagnosticos', group_name: 'Metodos Graficos', procedure_type: 'exame', unit_price: 35.00 },
   { code: '40101029', description: 'Holter 24 horas', chapter: 'Procedimentos Diagnosticos', group_name: 'Metodos Graficos', procedure_type: 'exame', unit_price: 180.00 },
   { code: '40101045', description: 'Teste ergometrico', chapter: 'Procedimentos Diagnosticos', group_name: 'Metodos Graficos', procedure_type: 'exame', unit_price: 200.00 },
-  { code: '40102017', description: 'Ecocardiograma transtorácico', chapter: 'Procedimentos Diagnosticos', group_name: 'Metodos Graficos', procedure_type: 'exame', unit_price: 250.00 },
+  { code: '40102017', description: 'Ecocardiograma transtoracico', chapter: 'Procedimentos Diagnosticos', group_name: 'Metodos Graficos', procedure_type: 'exame', unit_price: 250.00 },
 
   // Endoscopia
   { code: '40201015', description: 'Endoscopia digestiva alta', chapter: 'Procedimentos Diagnosticos', group_name: 'Endoscopia', procedure_type: 'exame', unit_price: 350.00 },
@@ -87,12 +84,24 @@ const TUSS_PROCEDURES = [
   { code: '80001038', description: 'Diaria de UTI adulto', chapter: 'Diarias', group_name: 'Internacao', procedure_type: 'procedimento', unit_price: 2000.00 },
 ];
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    // First, try to create the table if it doesn't exist
-    // We'll use upsert to handle both insert and update cases
+    const rlKey = getRateLimitKey(request, 'tuss-seed');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 5, windowSeconds: 3600 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
 
-    const { data, error } = await supabaseAdmin
+    const supabase = await createClient();
+    const auth = await checkPermission(supabase, 'admin:all');
+    if (!auth.authorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    }
+
+    const { data, error } = await supabase
       .from('tuss_procedures')
       .upsert(
         TUSS_PROCEDURES.map(proc => ({
@@ -105,11 +114,10 @@ export async function POST() {
       .select();
 
     if (error) {
-      // If table doesn't exist, we need to create it first
       if (error.code === '42P01') {
         return NextResponse.json(
           {
-            error: 'Table tuss_procedures does not exist. Please run the migration first.',
+            success: false, error: 'Table tuss_procedures does not exist. Please run the migration first.',
             migration: 'Run the SQL in supabase/migrations/002_tuss_table.sql'
           },
           { status: 400 }
@@ -126,7 +134,7 @@ export async function POST() {
   } catch (error: unknown) {
     const err = error as { message?: string };
     return NextResponse.json(
-      { error: err.message || 'Failed to seed TUSS procedures' },
+      { success: false, error: err.message || 'Failed to seed TUSS procedures' },
       { status: 500 }
     );
   }

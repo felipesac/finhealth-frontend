@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { createClient } from '@/lib/supabase/server';
+import { checkPermission } from '@/lib/rbac';
+import { rateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -12,13 +9,27 @@ export async function GET(request: Request) {
   const limit = parseInt(searchParams.get('limit') || '20');
 
   try {
-    let query = supabaseAdmin
+    const rlKey = getRateLimitKey(request, 'tuss-list');
+    const { success: allowed } = await rateLimit(rlKey, { limit: 30, windowSeconds: 60 });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Muitas requisicoes. Tente novamente em breve.' },
+        { status: 429 }
+      );
+    }
+
+    const supabase = await createClient();
+    const auth = await checkPermission(supabase, 'tiss:read');
+    if (!auth.authorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    }
+
+    let query = supabase
       .from('tuss_procedures')
       .select('*')
       .eq('active', true);
 
     if (search) {
-      // Search by code or description
       query = query.or(`code.ilike.%${search}%,description.ilike.%${search}%`);
     }
 
@@ -27,7 +38,6 @@ export async function GET(request: Request) {
       .limit(limit);
 
     if (error) {
-      // If table doesn't exist, return empty array
       if (error.code === '42P01') {
         return NextResponse.json({ data: [], message: 'Table not created yet' });
       }
@@ -38,7 +48,7 @@ export async function GET(request: Request) {
   } catch (error: unknown) {
     const err = error as { message?: string };
     return NextResponse.json(
-      { error: err.message || 'Failed to fetch TUSS procedures' },
+      { success: false, error: err.message || 'Failed to fetch TUSS procedures' },
       { status: 500 }
     );
   }

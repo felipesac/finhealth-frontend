@@ -8,6 +8,9 @@
 
 # testing
 /coverage
+/e2e/.auth/
+/test-results/
+/playwright-report/
 
 # next.js
 /.next/
@@ -27,6 +30,7 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env.test
 
 # vercel
 .vercel
@@ -34,3 +38,30 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.key
+
+# Dependencies
+node_modules/
+
+# Build & Logs
+dist/
+build/
+*.log
+logs/
+
+# IDE & OS
+Thumbs.db
+.idea/
+*.swp
+
+# AIOX Local
+.aiox-core/local/
+.claude/settings.local.json
+.aiox/install-log.txt

@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +28,7 @@ const statusConfig: Record<AccountStatus, { label: string; variant: 'default' | 
   appeal: { label: 'Em Recurso', variant: 'secondary' },
 };
 
-export function RecentAccounts({ accounts }: RecentAccountsProps) {
+function RecentAccountsInner({ accounts }: RecentAccountsProps) {
   return (
     <Card>
       <CardHeader>
@@ -46,7 +47,7 @@ export function RecentAccounts({ accounts }: RecentAccountsProps) {
           </TableHeader>
           <TableBody>
             {accounts.map((account) => {
-              const status = statusConfig[account.status];
+              const status = statusConfig[account.status] || { label: account.status, variant: 'outline' as const };
               return (
                 <TableRow key={account.id}>
                   <TableCell>
@@ -54,15 +55,15 @@ export function RecentAccounts({ accounts }: RecentAccountsProps) {
                       href={`/contas/${account.id}`}
                       className="font-medium text-primary hover:underline"
                     >
-                      {account.account_number}
+                      {account.account_number || '-'}
                     </Link>
                   </TableCell>
                   <TableCell>{account.patient?.name || '-'}</TableCell>
-                  <TableCell>{formatCurrency(account.total_amount)}</TableCell>
+                  <TableCell>{formatCurrency(account.total_amount ?? 0)}</TableCell>
                   <TableCell>
                     <Badge variant={status.variant}>{status.label}</Badge>
                   </TableCell>
-                  <TableCell>{formatDate(account.created_at)}</TableCell>
+                  <TableCell>{account.created_at ? formatDate(account.created_at) : '-'}</TableCell>
                 </TableRow>
               );
             })}
@@ -79,3 +80,5 @@ export function RecentAccounts({ accounts }: RecentAccountsProps) {
     </Card>
   );
 }
+
+export const RecentAccounts = React.memo(RecentAccountsInner);

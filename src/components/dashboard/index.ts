@@ -1,3 +1,10 @@
 export { MetricsGrid } from './MetricsGrid';
 export { GlosasChart } from './GlosasChart';
 export { RecentAccounts } from './RecentAccounts';
+export { AccountsStatusChart } from './AccountsStatusChart';
+export { DashboardCustomizer } from './DashboardCustomizer';
+export { DashboardWidgets } from './DashboardWidgets';
+export { GlosasTrendMini } from './GlosasTrendMini';
+export { PaymentsChart } from './PaymentsChart';
+export { QuickActions } from './QuickActions';
+export { RealtimeDashboard } from './RealtimeDashboard';

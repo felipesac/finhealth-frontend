@@ -1,72 +1,129 @@
+import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GlosasTable } from '@/components/glosas';
+import { GlosaFilters } from '@/components/glosas/GlosaFilters';
+import { Pagination } from '@/components/ui/pagination';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import type { Glosa } from '@/types';
 
-async function getGlosasData() {
-  const supabase = await createClient();
+export const metadata: Metadata = {
+  title: 'Glosas | FinHealth',
+  description: 'Gerencie as glosas e recursos',
+};
 
-  const { data: glosas } = await supabase
+const PAGE_SIZE = 25;
+
+interface PageProps {
+  searchParams: Promise<{ page?: string; tab?: string; search?: string; glosaType?: string }>;
+}
+
+async function getGlosasData(page: number, tab: string, search: string, glosaType: string) {
+  const supabase = await createClient();
+  const from = (page - 1) * PAGE_SIZE;
+
+  // Build filtered query based on tab
+  let query = supabase
     .from('glosas')
     .select(`
       *,
       medical_account:medical_accounts(account_number)
-    `)
-    .order('priority_score', { ascending: false })
-    .limit(100);
+    `, { count: 'exact' })
+    .order('priority_score', { ascending: false });
 
-  return (glosas || []) as Glosa[];
+  if (tab === 'pending') {
+    query = query.eq('appeal_status', 'pending');
+  } else if (tab === 'in_progress') {
+    query = query.in('appeal_status', ['in_progress', 'sent']);
+  } else if (tab === 'resolved') {
+    query = query.in('appeal_status', ['accepted', 'rejected']);
+  }
+
+  if (search) {
+    query = query.ilike('glosa_code', `%${search}%`);
+  }
+
+  if (glosaType && glosaType !== 'all') {
+    query = query.eq('glosa_type', glosaType);
+  }
+
+  const { data: glosas, count } = await query.range(from, from + PAGE_SIZE - 1);
+
+  // Get counts for each tab (separate queries for accurate totals)
+  const [pendingRes, inProgressRes, resolvedRes, allRes] = await Promise.all([
+    supabase.from('glosas').select('id', { count: 'exact', head: true }).eq('appeal_status', 'pending'),
+    supabase.from('glosas').select('id', { count: 'exact', head: true }).in('appeal_status', ['in_progress', 'sent']),
+    supabase.from('glosas').select('id', { count: 'exact', head: true }).in('appeal_status', ['accepted', 'rejected']),
+    supabase.from('glosas').select('id', { count: 'exact', head: true }),
+  ]);
+
+  return {
+    glosas: (glosas || []) as Glosa[],
+    total: count || 0,
+    counts: {
+      pending: pendingRes.count || 0,
+      inProgress: inProgressRes.count || 0,
+      resolved: resolvedRes.count || 0,
+      all: allRes.count || 0,
+    },
+  };
 }
 
-export default async function GlosasPage() {
-  const glosas = await getGlosasData();
-
-  const pendingGlosas = glosas.filter((g) => g.appeal_status === 'pending');
-  const inProgressGlosas = glosas.filter((g) =>
-    ['in_progress', 'sent'].includes(g.appeal_status)
-  );
-  const resolvedGlosas = glosas.filter((g) =>
-    ['accepted', 'rejected'].includes(g.appeal_status)
-  );
+export default async function GlosasPage({ searchParams }: PageProps) {
+  const t = await getTranslations('glosas');
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || '1', 10));
+  const tab = params.tab || 'pending';
+  const search = params.search || '';
+  const glosaType = params.glosaType || 'all';
+  let glosas: Glosa[] = [];
+  let total = 0;
+  let counts = { pending: 0, inProgress: 0, resolved: 0, all: 0 };
+  try {
+    const data = await getGlosasData(page, tab, search, glosaType);
+    glosas = data.glosas;
+    total = data.total;
+    counts = data.counts;
+  } catch {
+    // Supabase unavailable — render empty state
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Glosas</h1>
-        <p className="text-muted-foreground">
-          Gerencie as glosas e recursos
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('title')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t('description')}
         </p>
       </div>
 
-      <Tabs defaultValue="pending" className="space-y-4">
+      <GlosaFilters />
+
+      <Tabs defaultValue={tab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="pending">
-            Pendentes ({pendingGlosas.length})
+          <TabsTrigger value="pending" asChild>
+            <a href={`/glosas?tab=pending`}>{t('pendingCount', { count: counts.pending })}</a>
           </TabsTrigger>
-          <TabsTrigger value="in_progress">
-            Em Recurso ({inProgressGlosas.length})
+          <TabsTrigger value="in_progress" asChild>
+            <a href={`/glosas?tab=in_progress`}>{t('inProgressCount', { count: counts.inProgress })}</a>
           </TabsTrigger>
-          <TabsTrigger value="resolved">
-            Resolvidas ({resolvedGlosas.length})
+          <TabsTrigger value="resolved" asChild>
+            <a href={`/glosas?tab=resolved`}>{t('resolvedCount', { count: counts.resolved })}</a>
           </TabsTrigger>
-          <TabsTrigger value="all">
-            Todas ({glosas.length})
+          <TabsTrigger value="all" asChild>
+            <a href={`/glosas?tab=all`}>{t('allCount', { count: counts.all })}</a>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending">
-          <GlosasTable glosas={pendingGlosas} />
-        </TabsContent>
-        <TabsContent value="in_progress">
-          <GlosasTable glosas={inProgressGlosas} />
-        </TabsContent>
-        <TabsContent value="resolved">
-          <GlosasTable glosas={resolvedGlosas} />
-        </TabsContent>
-        <TabsContent value="all">
-          <GlosasTable glosas={glosas} />
+        <TabsContent value={tab} forceMount>
+          <ErrorBoundary fallbackMessage={t('errorLoading')}>
+            <GlosasTable glosas={glosas} />
+          </ErrorBoundary>
         </TabsContent>
       </Tabs>
+
+      <Pagination total={total} pageSize={PAGE_SIZE} currentPage={page} />
     </div>
   );
 }
